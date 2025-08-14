@@ -1,0 +1,2 @@
+- [] réfléchir à une méthode plus orientée objet de faire le meshbuilder (mieux que juste avoir une fonction dans une classe mdr)
+- [] séparer l'engine du renderer
