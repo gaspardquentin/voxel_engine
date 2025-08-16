@@ -36,10 +36,20 @@ class Renderer {
   Shader m_shader_prog;
   MeshBuilder m_mesh_builder;
   std::array<ChunkRenderer, 16> m_chunk_renderers;
+  unsigned int m_screen_width, m_screen_height;
 
 public:
-  Renderer(std::string vertex_shader_path, std::string fragment_shader_path):
-    m_shader_prog(vertex_shader_path, fragment_shader_path) {}
+  Renderer(std::string vertex_shader_path,
+           std::string fragment_shader_path,
+           unsigned int screen_width,
+           unsigned int screen_height):
+    m_shader_prog(vertex_shader_path, fragment_shader_path),
+    m_screen_width(screen_width), m_screen_height(screen_height)
+  {
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  }
   void render(const World& world, const Camera& camera);
   void destroy();
 };

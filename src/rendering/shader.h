@@ -25,6 +25,7 @@ public:
 
     if (vertex_shader == 0 || fragment_shader == 0) {
       std::cerr << "Shader.hpp: Shader compilation failed." << std::endl;
+      exit(0);
       return;
     }
 
@@ -71,6 +72,14 @@ public:
         std::cerr << "WARNING::SHADER::UNIFORM '" << name << "' NOT FOUND" << std::endl;
     }
     glUniformMatrix4fv(location, 1, GL_FALSE, matrix);
+  }
+
+  void setUniformVec3(const std::string& name, const float *vector) const {
+    GLint location = glGetUniformLocation(m_program, name.c_str());
+    if (location == -1) {
+        std::cerr << "WARNING::SHADER::UNIFORM '" << name << "' NOT FOUND" << std::endl;
+    }
+    glUniform3fv(location, 1, vector);
   }
 
 private:

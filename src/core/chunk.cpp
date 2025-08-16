@@ -2,8 +2,9 @@
 #include <iostream>
 
 bool Chunk::positionInChunk(Vec3i pos) const {
-    size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
-    return index < Chunk::SIZE;
+    return  pos.x < Chunk::WIDTH &&
+            pos.y < Chunk::HEIGHT &&
+            pos.z < Chunk::DEPTH;
 }
 
 const VoxelType& Chunk::getVoxel(Vec3i pos) const {
@@ -39,7 +40,7 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types):
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             for (int z = 0; z < CHUNK_DEPTH; z++) {
                 size_t index = (y * Chunk::DEPTH + z) * Chunk::WIDTH + x;
-                if (y < CHUNK_HEIGHT/2) {
+                if (y < CHUNK_HEIGHT/2) { // /2
                     m_data[index] = 1; // dirt
                 } else {
                     m_data[index] = 0; // air

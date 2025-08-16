@@ -10,10 +10,10 @@
 using ChunkCoord = Vec3;
 class Chunk{
 public:
-    static constexpr int SIZE = CHUNK_SIZE;
-    static constexpr int WIDTH = CHUNK_WIDTH;
-    static constexpr int HEIGHT = CHUNK_HEIGHT;
-    static constexpr int DEPTH = CHUNK_DEPTH;
+    static constexpr unsigned int SIZE = CHUNK_SIZE;
+    static constexpr unsigned int WIDTH = CHUNK_WIDTH;
+    static constexpr unsigned int HEIGHT = CHUNK_HEIGHT;
+    static constexpr unsigned int DEPTH = CHUNK_DEPTH;
     const VoxelType& getVoxel(Vec3i pos) const;
     const VoxelType& getVoxelType(VoxelID vid) const;
     // Checks wether the chunk coord is not out of bounds 

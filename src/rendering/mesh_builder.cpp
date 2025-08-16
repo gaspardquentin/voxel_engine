@@ -1,17 +1,19 @@
 #include "mesh_builder.h"
-#include <iostream>
 #include "voxel_engine/voxel_types.h"
+#include <cstdint>
+#include <iostream>
 
 
 Vec3i direction(VoxelFace vf) {
     switch (vf) {
-        case FRONT: return {0, 0, 1};
-        case BACK: return {0, 0, -1};
-        case LEFT: return {-1, 0, 0};
-        case RIGHT: return {1, 0, 0};
-        case TOP: return {0, 1, 0};
-        case BOTTOM: return {0, -1, 0};
+        case VoxelFace::FRONT: return {0, 0, 1};
+        case VoxelFace::BACK: return {0, 0, -1};
+        case VoxelFace::LEFT: return {-1, 0, 0};
+        case VoxelFace::RIGHT: return {1, 0, 0};
+        case VoxelFace::TOP: return {0, 1, 0};
+        case VoxelFace::BOTTOM: return {0, -1, 0};
     }
+    std::cerr << "<voxeng> should not be here." << std::endl;
     return {0, 0, 0};
 }
 
@@ -65,7 +67,7 @@ void MeshBuilder::emitFace(MeshData& mesh_data, Vec3i voxel_pos, VoxelFace face,
     uint32_t startIndex = static_cast<uint32_t>(mesh_data.vertices.size());
 
     // Push the 4 vertices for this face
-    for (const Vertex& v: VOXEL_FACE_VERTICES[face]) {
+    for (const Vertex& v: VOXEL_FACE_VERTICES[static_cast<uint8_t>(face)]) {
         mesh_data.vertices.push_back({
             Vec3f{voxel_pos} + v.pos,
             v.normal,
@@ -94,7 +96,7 @@ MeshData MeshBuilder::buildMesh(const Chunk& chunk) const {
 		    continue;
 		}
 
-                for (int vfi = FRONT; vfi != BOTTOM; vfi++) {
+                for (uint8_t vfi = 0; vfi <= static_cast<uint8_t>(VoxelFace::BOTTOM); vfi++) {
                     VoxelFace face = static_cast<VoxelFace>(vfi);
                     Vec3i neighborPos = Vec3i{x, y, z} + direction(face);
                     VoxelType neighbor = chunk.getVoxelType(0);

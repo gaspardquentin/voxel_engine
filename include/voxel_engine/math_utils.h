@@ -3,6 +3,19 @@
 #include <cmath>
 #include <iostream>
 
+/* =============== Helper Functions ===================== */
+namespace voxeng {
+    namespace math {
+        inline double rad_to_deg(double radians) {
+            return radians * (180.0 / M_PI);
+        }
+        inline double deg_to_rad(double deg) {
+            return deg * M_PI / 180;
+        }
+    }
+}
+
+/* ================ Vectors Data structures ============== */
 template <typename T>
 struct Vec2T {
     T x, y;
@@ -11,7 +24,17 @@ struct Vec2T {
     Vec2T(T x, T y): x(x), y(y) {}
 
     Vec2T operator+(const Vec2T& other) const { return {x + other.x, y + other.y}; }
+    Vec2T operator+=(const Vec2T& other) { 
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
     Vec2T operator-(const Vec2T& other) const { return {x - other.x, y - other.y}; }
+    Vec2T operator-=(const Vec2T& other) { 
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
     Vec2T operator*(float scalar) const { return {x * scalar, y * scalar}; }
     Vec2T operator/(float scalar) const { return {x / scalar, y / scalar}; }
 
@@ -44,7 +67,19 @@ struct Vec3T {
     Vec2T<T> xy() const { return {x, y}; }
 
     Vec3T operator+(const Vec3T& other) const { return {x + other.x, y + other.y, z + other.z}; }
+    Vec3T operator+=(const Vec3T& other) { 
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        return *this;
+    }
     Vec3T operator-(const Vec3T& other) const { return {x - other.x, y - other.y, z - other.z}; }
+    Vec3T operator-=(const Vec3T& other) { 
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
+        return *this;
+    }
     Vec3T operator*(float scalar) const { return {x * scalar, y * scalar, z * scalar}; }
     Vec3T operator/(float scalar) const { return {x / scalar, y / scalar, z / scalar}; }
 
@@ -58,7 +93,25 @@ struct Vec3T {
         };
     }
 
+    static Vec3T cross(const Vec3T& v1, const Vec3T& v2) {
+        return {
+            v1.y * v2.z - v1.z * v2.y,
+            v1.z * v2.x - v1.x * v2.z,
+            v1.x * v2.y - v1.y * v2.x
+        };
+    }
+
     float length() const { return std::sqrt(x * x + y * y + z * z); }
+    static Vec3T normalize(const Vec3T& vec) {
+        if (vec.length() == 0) {
+            return {0, 0, 0};
+        }
+        return {
+            vec.x / vec.length(),
+            vec.y / vec.length(),
+            vec.z / vec.length(),
+        };
+    }
 
     friend std::ostream& operator<<(std::ostream& os, const Vec3T& vec) {
         os << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";

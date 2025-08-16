@@ -1,6 +1,18 @@
+/* */
+#define RENDERING_OPENGL
+//#define RENDERING_N3DS
+//#define RENDERING_NDS
+
 
 /* Chunk related constants */
 #define CHUNK_WIDTH 16
 #define CHUNK_HEIGHT 16
 #define CHUNK_DEPTH 16
 #define CHUNK_SIZE (CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH)
+
+#define CAMERA_MOV_SPEED 2.5f
+#define CAMERA_DEFAULT_ZOOM 70.0f
+#define DEFAULT_CAM_YAW -90.0f
+#define DEFAULT_CAM_PITCH 0.0f
+
+#define MOUSE_SENSITIVITY 0.1f

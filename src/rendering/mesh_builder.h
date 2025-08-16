@@ -24,7 +24,7 @@ struct MeshData {
   }
 };
 
-enum VoxelFace { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
+enum class VoxelFace: uint8_t { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
 class MeshBuilder {
   void emitFace(MeshData& mesh_data, Vec3i voxel_pos, VoxelFace face, const VoxelType& voxel) const;
