@@ -15,6 +15,10 @@ public:
     void processMovementCamera(float xoffset, float yoffset, bool constrain_pitch = true);
     void processZoomCamera(float yoffset);
 
+    bool playerPlaceVoxel(uint8_t max_reach, VoxelID voxel);
+    bool playerRemoveVoxel(uint8_t max_reach);
+    bool playerSetVoxel(uint8_t max_reach, VoxelID new_voxel); //TODO: maybe move this into voxelengine constructor arg
+
 private:
     class Impl;
     Impl* m_impl;

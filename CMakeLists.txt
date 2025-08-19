@@ -66,8 +66,10 @@ set(VOXEL_ENGINE_SOURCES
     # src/core/math_utils.cpp
     src/rendering/renderer.cpp
     src/rendering/mesh_builder.cpp
+    src/rendering/stb_image.cpp
     src/rendering/shader.cpp
     src/rendering/camera.cpp
+    src/rendering/texture.cpp
 )
 
 # Public headers
@@ -77,6 +79,7 @@ set(VOXEL_ENGINE_PUBLIC_HEADERS
     include/voxel_engine/voxel_types.h
     include/voxel_engine/callbacks.h
     include/voxel_engine/math_utils.h
+    include/voxel_engine/texture.h
 )
 
 # Internal headers
@@ -87,6 +90,8 @@ set(VOXEL_ENGINE_INTERNAL_HEADERS
     src/rendering/mesh_builder.h
     src/rendering/shader.h
     src/rendering/camera.h
+    src/rendering/stb_image.h
+    src/rendering/opengl_texture.h
     src/config.h
 )
 
@@ -126,8 +131,10 @@ target_link_libraries(VoxelEngine
 # Embed shaders as strings (optional approach)
 # You could also load them at runtime
 set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
-target_compile_definitions(VoxelEngine PRIVATE 
+set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+target_compile_definitions(VoxelEngine PUBLIC 
     VOXEL_ENGINE_SHADER_DIR="${SHADER_DIR}"
+    VOXEL_ENGINE_ASSETS_DIR="${ASSETS_DIR}"
 )
 
 # =============================================================================

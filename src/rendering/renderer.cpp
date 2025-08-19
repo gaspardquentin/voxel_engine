@@ -3,8 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <memory>
 
 #include "voxel_engine/voxel_types.h"
+#include "opengl_texture.h"
 
 void Renderer::render(const World& world, const Camera& camera) {
     m_shader_prog.bind();
@@ -32,6 +34,9 @@ void Renderer::render(const World& world, const Camera& camera) {
     m_shader_prog.setUniformMatrix4fv("view", glm::value_ptr(view));
     m_shader_prog.setUniformMatrix4fv("projection", glm::value_ptr(projection));
 
+    // voxel texture TODO: change approach
+    m_shader_prog.setUniform1i("atlas", 0);
+
     //std::vector<const Chunk&> to_render;
     // get the renderable chunks
     //TODO: implement this
@@ -44,10 +49,10 @@ void Renderer::render(const World& world, const Camera& camera) {
     std::vector<Chunk> chunks;
     chunks.push_back({DEFAULT_VOXEL_TYPES});
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::vec3 voxel_color(1.0f, 0.5f, 0.2f);
-    glm::vec3 outline_color(0.0f, 0.0f, 0.2f);
-    m_shader_prog.setUniformVec3("objectColor", glm::value_ptr(voxel_color));
-    m_shader_prog.setUniformVec3("outlineColor", glm::value_ptr(outline_color));
+    //glm::vec3 voxel_color(1.0f, 0.5f, 0.2f);
+    //glm::vec3 outline_color(0.0f, 0.0f, 0.2f);
+    //m_shader_prog.setUniformVec3("objectColor", glm::value_ptr(voxel_color));
+    //m_shader_prog.setUniformVec3("outlineColor", glm::value_ptr(outline_color));
     for (const Chunk& c: chunks) {
 	ChunkRenderer& cr = m_chunk_renderers[c.getRendererId()];
 	MeshData md = m_mesh_builder.buildMesh(c);
@@ -55,14 +60,27 @@ void Renderer::render(const World& world, const Camera& camera) {
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	//cr.draw();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glLineWidth(4.0f); // Set line thickness
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glLineWidth(4.0f); // Set line thickness
 	cr.draw();
     }
     m_shader_prog.unbind();
     //m_chunk_renderers[chunks[0].getRendererId()].destroy();
     //exit(0);
 }
+
+
+void Renderer::loadTextures(World& world) {
+    int voxel_types_nbr = world.getVoxelTypes().size();
+    for (int i = 1; i < voxel_types_nbr; i++) {
+	const Texture& old_texture = *(world.getVoxelType(i).getTexture());
+	auto glt = std::make_shared<OpenGLTexture>(old_texture);
+	world.setTextureForType(i, glt);
+	glt->loadTexture();
+	glt->bind(); //TODO: move this away
+    }
+}
+
 
 void Renderer::destroy() {
     for (ChunkRenderer& cr: m_chunk_renderers) {

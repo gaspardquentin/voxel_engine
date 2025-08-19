@@ -51,6 +51,7 @@ public:
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   }
   void render(const World& world, const Camera& camera);
+  void loadTextures(World& world);
   void destroy();
 };
 

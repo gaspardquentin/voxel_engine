@@ -6,7 +6,7 @@
 #include "voxel_types.h"
 #include "math_utils.h"
 
-using ChunkCoord = Vec3;
+using ChunkCoord = Vec3i;
 using WorldCoord = Vec3;
 
 using ChunkGeneratorCallback = std::function<void(ChunkCoord coord, VoxelID* chunkData)>;

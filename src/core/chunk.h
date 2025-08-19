@@ -7,7 +7,7 @@
 #include "voxel_engine/voxel_types.h"
 #include "../config.h"
 
-using ChunkCoord = Vec3;
+using ChunkCoord = Vec3i;
 class Chunk{
 public:
     static constexpr unsigned int SIZE = CHUNK_SIZE;
@@ -15,6 +15,7 @@ public:
     static constexpr unsigned int HEIGHT = CHUNK_HEIGHT;
     static constexpr unsigned int DEPTH = CHUNK_DEPTH;
     const VoxelType& getVoxel(Vec3i pos) const;
+    VoxelID setVoxel(Vec3i pos, VoxelID new_voxel);
     const VoxelType& getVoxelType(VoxelID vid) const;
     // Checks wether the chunk coord is not out of bounds 
     // (does not check if world coord is in this chunk)

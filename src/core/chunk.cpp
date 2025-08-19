@@ -21,6 +21,23 @@ const VoxelType& Chunk::getVoxel(Vec3i pos) const {
 
     return m_voxel_types[m_data[index]];
 }
+
+
+VoxelID Chunk::setVoxel(Vec3i pos, VoxelID new_voxel) {
+    if (!positionInChunk(pos)) {
+        std::cerr << "<voxeng> WARNING: Voxel at " << pos << " out of Chunk bounds.\n";
+        return 0;
+    }
+    if (new_voxel >= m_voxel_types.size()) {
+        std::cerr << "<voxeng> WARNING: Voxel at " << pos << " of invalid Voxel Type " << new_voxel << ".\n";
+        return 0;
+    }
+    size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
+    VoxelID old = m_data[index];
+    m_data[index] = new_voxel;
+    return old;
+}
+
 const VoxelType& Chunk::getVoxelType(VoxelID vid) const {
     if (vid >= m_voxel_types.size()) {
         std::cerr << "<voxeng> WARNING: Voxel Type " << vid << " does not exist.\n";
@@ -28,6 +45,7 @@ const VoxelType& Chunk::getVoxelType(VoxelID vid) const {
     }
     return m_voxel_types[vid];
 }
+
 
 
 Chunk::Chunk(const std::vector<VoxelType>& voxel_types): 
@@ -39,13 +57,21 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types):
     for (int x = 0; x < CHUNK_WIDTH; x++) {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             for (int z = 0; z < CHUNK_DEPTH; z++) {
-                size_t index = (y * Chunk::DEPTH + z) * Chunk::WIDTH + x;
                 if (y < CHUNK_HEIGHT/2) { // /2
-                    m_data[index] = 1; // dirt
+                    setVoxel({x,y,z}, 1);
                 } else {
-                    m_data[index] = 0; // air
+                    setVoxel({x,y,z}, 0);
                 }
             }
         }
     }
+
+    Vec3i pos{CHUNK_WIDTH-1, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-1};
+    setVoxel(pos, 0);
+    pos = Vec3i{CHUNK_WIDTH-3, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-3};
+    setVoxel(pos, 0);
+
+    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2, CHUNK_DEPTH-1}, 1);
+    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+1, CHUNK_DEPTH-1}, 1);
+    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+2, CHUNK_DEPTH-1}, 1);
 }

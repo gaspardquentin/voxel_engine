@@ -124,4 +124,12 @@ public:
     return m_zoom;
   }
 
+  Vec3f getPos() const {
+    return m_pos;
+  }
+
+  Vec3f getDir() const {
+    return m_dir;
+  }
+
 };

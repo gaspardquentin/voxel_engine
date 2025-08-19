@@ -5,8 +5,8 @@
 
 #include "voxel_engine/voxel_engine.h"
 
-const unsigned int SCREEN_WIDTH = 800;
-const unsigned int SCREEN_HEIGHT = 600;
+const unsigned int SCREEN_WIDTH = 1200;
+const unsigned int SCREEN_HEIGHT = 900;
 
 float lastX = SCREEN_WIDTH / 2.0f;
 float lastY = SCREEN_HEIGHT / 2.0f;
@@ -60,6 +60,8 @@ void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
         engine.processMovementPlayer(UP, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         engine.processMovementPlayer(DOWN, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        engine.playerPlaceVoxel(3, 1);
 }
 
 
@@ -78,7 +80,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    GLFWwindow *window = glfwCreateWindow(800, 600, "Cube", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Voxel Engine example", NULL, NULL);
     if (!window) {
         std::cerr << "Window creation failed" << std::endl;
         glfwTerminate();
