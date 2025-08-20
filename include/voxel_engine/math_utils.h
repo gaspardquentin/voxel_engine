@@ -73,6 +73,10 @@ struct Vec3T {
         z += other.z;
         return *this;
     }
+
+    bool operator==(const Vec3T& other) const {
+        return x == other.x && y == other.y && z == other.z;
+    }
     Vec3T operator-(const Vec3T& other) const { return {x - other.x, y - other.y, z - other.z}; }
     Vec3T operator-=(const Vec3T& other) { 
         x -= other.x;

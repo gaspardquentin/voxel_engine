@@ -22,7 +22,7 @@ public:
     glBindTexture(GL_TEXTURE_2D, m_texture);
 
     if (m_impl->m_data != nullptr) {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_impl->m_width, m_impl->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_impl->m_data);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_impl->m_width, m_impl->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_impl->m_data);
     } else {
       std::cerr << "<voxeng> Failed to load texture " << m_impl->m_atlas_path << std::endl;
     }

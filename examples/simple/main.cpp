@@ -5,8 +5,8 @@
 
 #include "voxel_engine/voxel_engine.h"
 
-const unsigned int SCREEN_WIDTH = 1200;
-const unsigned int SCREEN_HEIGHT = 900;
+const unsigned int SCREEN_WIDTH = 1920;
+const unsigned int SCREEN_HEIGHT = 1080;
 
 float lastX = SCREEN_WIDTH / 2.0f;
 float lastY = SCREEN_HEIGHT / 2.0f;
@@ -44,6 +44,19 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     }
 }
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (gVoxelEngine == nullptr) {
+        return;
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        gVoxelEngine->playerRemoveVoxel(3);
+    }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        gVoxelEngine->playerPlaceVoxel(3, 1);
+    }
+}
+
+
 void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -60,8 +73,6 @@ void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
         engine.processMovementPlayer(UP, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         engine.processMovementPlayer(DOWN, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        engine.playerPlaceVoxel(3, 1);
 }
 
 
@@ -88,9 +99,10 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
-    // set mouse callbacks for camera movements
+    // set mouse callbacks for camera movements and block placement
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

@@ -6,27 +6,20 @@
 #include <memory>
 
 #include "voxel_engine/voxel_types.h"
+#include "voxel_engine/chunk.h"
 #include "opengl_texture.h"
 
-void Renderer::render(const World& world, const Camera& camera) {
+void Renderer::render(World& world, const Camera& camera) {
     m_shader_prog.bind();
-
-    /*
-    glm::mat4 view = glm::lookAt(
-	glm::vec3(10.0f, 10.0f, 30.0f), // Move back and up so we see the chunk
-	glm::vec3(12.0f, 2.0f, 8.0f),   // Look at the chunk's center
-	glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-    */
 
     // MVP matrices calc
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = camera.getViewMatrix();
     glm::mat4 projection = glm::perspective(
-	glm::radians(camera.getZoom()),            // Wider FOV to be sure we see it
+	glm::radians(camera.getZoom()),
 	(float) m_screen_width / (float) m_screen_height,
 	0.1f,
-	1000.0f                         // Big far plane
+	3000.0f
     );
 
     // set shader MVP uniforms
@@ -37,37 +30,53 @@ void Renderer::render(const World& world, const Camera& camera) {
     // voxel texture TODO: change approach
     m_shader_prog.setUniform1i("atlas", 0);
 
-    //std::vector<const Chunk&> to_render;
-    // get the renderable chunks
-    //TODO: implement this
-    // get the mesh data of the chunks to render
-    //std::vector<MeshData> meshes;
-    //for (const Chunk& c: to_render) {
-	//meshes.push_back(m_mesh_builder.buildMesh(c));
-    //}
-    // TODO: handle camera and shaders
-    std::vector<Chunk> chunks;
-    chunks.push_back({DEFAULT_VOXEL_TYPES});
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //glm::vec3 voxel_color(1.0f, 0.5f, 0.2f);
-    //glm::vec3 outline_color(0.0f, 0.0f, 0.2f);
-    //m_shader_prog.setUniformVec3("objectColor", glm::value_ptr(voxel_color));
-    //m_shader_prog.setUniformVec3("outlineColor", glm::value_ptr(outline_color));
-    for (const Chunk& c: chunks) {
+    for (Chunk& c: world.getChunks()) {
 	ChunkRenderer& cr = m_chunk_renderers[c.getRendererId()];
-	MeshData md = m_mesh_builder.buildMesh(c);
-	cr.upload(md);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	
-	//cr.draw();
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	//glLineWidth(4.0f); // Set line thickness
+	if (c.update()) {
+	    MeshData md = m_mesh_builder.buildMesh(c);
+	    cr.upload(md);
+	}
+
 	cr.draw();
+
     }
     m_shader_prog.unbind();
-    //m_chunk_renderers[chunks[0].getRendererId()].destroy();
-    //exit(0);
-}
+
+    // Crosshair rendering
+    Shader crosshair_prog(
+	VOXEL_ENGINE_SHADER_DIR "/crosshair.vert",
+	VOXEL_ENGINE_SHADER_DIR "/crosshair.frag"
+    );
+
+    float crosshairVertices[] = {
+	-0.01f,  0.0f, 0.0f,
+	0.01f,  0.0f, 0.0f,
+	0.0f, -0.015f, 0.0f,
+	0.0f,  0.015f, 0.0f
+    };
+
+    GLuint crosshairVAO, crosshairVBO;
+    glGenVertexArrays(1, &crosshairVAO);
+    glGenBuffers(1, &crosshairVBO);
+
+    glBindVertexArray(crosshairVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, crosshairVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(crosshairVertices), crosshairVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindVertexArray(0);
+
+    crosshair_prog.bind();  // simple shader
+    glBindVertexArray(crosshairVAO);
+    glDisable(GL_DEPTH_TEST);  // always on top
+    glDrawArrays(GL_LINES, 0, 4);
+    glEnable(GL_DEPTH_TEST);
+    glBindVertexArray(0);
+    crosshair_prog.unbind();  // simple shader
+
+
+  }
 
 
 void Renderer::loadTextures(World& world) {
@@ -81,6 +90,12 @@ void Renderer::loadTextures(World& world) {
     }
 }
 
+
+void Renderer::generateChunkRenderers(int chunk_nbr) {
+    for (int i = 0; i < chunk_nbr ; i++) {
+	m_chunk_renderers.push_back({});
+    }
+}
 
 void Renderer::destroy() {
     for (ChunkRenderer& cr: m_chunk_renderers) {

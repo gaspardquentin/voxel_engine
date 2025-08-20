@@ -21,7 +21,7 @@ public:
 
 
 const std::vector<Texture> DEFAULT_TEXTURES = {
-    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/minecraft_dirt.jpg"}
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/dirt.png"}
     //,{VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/minecraft_grass.jpg"}
 };
 

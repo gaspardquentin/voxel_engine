@@ -1,4 +1,4 @@
-#include "chunk.h"
+#include "voxel_engine/chunk.h"
 #include <iostream>
 
 bool Chunk::positionInChunk(Vec3i pos) const {
@@ -35,6 +35,7 @@ VoxelID Chunk::setVoxel(Vec3i pos, VoxelID new_voxel) {
     size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
     VoxelID old = m_data[index];
     m_data[index] = new_voxel;
+    m_has_changed = true;
     return old;
 }
 
@@ -48,10 +49,12 @@ const VoxelType& Chunk::getVoxelType(VoxelID vid) const {
 
 
 
-Chunk::Chunk(const std::vector<VoxelType>& voxel_types): 
+Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position): 
     m_has_changed(true),
     m_renderer_id(0),
-    m_voxel_types(voxel_types) {
+    m_voxel_types(voxel_types),
+    m_world_pos(position)
+{
     // TODO: replace with better chunk generation
 
     for (int x = 0; x < CHUNK_WIDTH; x++) {

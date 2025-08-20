@@ -28,6 +28,7 @@ public:
 VoxelEngine::VoxelEngine(unsigned int screen_width, unsigned int screen_height):
     m_impl(new VoxelEngine::Impl(screen_width, screen_height)) {
     m_impl->m_renderer.loadTextures(m_impl->m_world);
+    m_impl->m_renderer.generateChunkRenderers(m_impl->m_world.getChunks().size());
 }
 
 VoxelEngine::~VoxelEngine() { delete m_impl; }
@@ -64,13 +65,14 @@ bool VoxelEngine::playerRemoveVoxel(uint8_t max_reach) {
 
 bool VoxelEngine::playerSetVoxel(uint8_t max_reach, VoxelID new_voxel) {
     Vec3f player_pos = m_impl->m_camera.getPos();
-    Vec3f camera_dir = m_impl->m_camera.getDir();
+    Vec3f camera_dir = m_impl->m_camera.getFront();
     Vec3f ray_cast = player_pos;
     for (int i = 0; i < max_reach; ++i) {
         ray_cast += camera_dir;
         const VoxelType& v = m_impl->m_world.getVoxel(ray_cast);
         if (v.getId() != 0) {
-            m_impl->m_world.setVoxel(ray_cast, new_voxel);
+            Vec3f to_place = new_voxel > 0 ? ray_cast - camera_dir : ray_cast;
+            m_impl->m_world.setVoxel(to_place, new_voxel);
             return true;
         }
     }

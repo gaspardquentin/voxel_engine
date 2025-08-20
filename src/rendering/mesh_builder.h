@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../core/chunk.h"
+#include "voxel_engine/chunk.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/math_utils.h"
 #include <iostream>
@@ -27,7 +27,7 @@ struct MeshData {
 enum class VoxelFace: uint8_t { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
 class MeshBuilder {
-  void emitFace(MeshData& mesh_data, Vec3i voxel_pos, VoxelFace face, const VoxelType& voxel) const;
+  void emitFace(MeshData& mesh_data, const Chunk& chunk, Vec3i voxel_pos, VoxelFace face, const VoxelType& voxel) const;
 
 public:
   MeshData buildMesh(const Chunk& chunk) const;

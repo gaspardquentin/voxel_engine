@@ -35,7 +35,7 @@ public:
 class Renderer {
   Shader m_shader_prog;
   MeshBuilder m_mesh_builder;
-  std::array<ChunkRenderer, 16> m_chunk_renderers;
+  std::vector<ChunkRenderer> m_chunk_renderers;
   unsigned int m_screen_width, m_screen_height;
 
 public:
@@ -48,10 +48,13 @@ public:
   {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //glClearColor(108.0f/255.0f, 188.0f/255.0f, 211.0f/255.0f, 0.0f);
+    glClearColor(77.0f/255.0f, 109.0f/255.0f, 157.0f/255.0f, 1.0f);
   }
-  void render(const World& world, const Camera& camera);
+  void render(World& world, const Camera& camera);
   void loadTextures(World& world);
+  void generateChunkRenderers(int chunk_nbr);
   void destroy();
 };
 

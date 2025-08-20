@@ -1,6 +1,6 @@
 #include "voxel_engine/world.h"
 #include "voxel_engine/callbacks.h"
-#include "chunk.h"
+#include "voxel_engine/chunk.h"
 #include <cstdint>
 #include <iostream>
 
@@ -23,9 +23,62 @@ public:
     ~Impl() {}
 
     void generateChunks() {
-        for (int i = 0; i < m_render_distance; i++) {
-            m_chunks.push_back({m_voxel_types});
+        int render_dist_sq = m_render_distance * m_render_distance;
+        _generateChunks({0.0f, 0.0f, 0.0f}, render_dist_sq, render_dist_sq-1);
+    }
+
+    void _generateChunks(Vec3f chunk_pos, int chunk_nbr, int next) {
+        if (chunk_nbr <= 0) {
+            return;
         }
+        m_chunks.push_back({m_voxel_types, chunk_pos});
+        m_chunks.back().setRendererId(m_chunks.size()-1);
+
+        chunk_nbr = next;
+        bool left, right, back, front;
+        left = right = back = front = false;
+        Vec3f right_neighboor = chunk_pos + Vec3f{(float)Chunk::WIDTH, 0.0f, 0.0f};
+        if (!_chunkInPosition(right_neighboor)) {
+            right = true;
+            next--;
+        }
+        Vec3 left_neighboor = chunk_pos + Vec3f{(float)-Chunk::WIDTH, 0.0f, 0.0f};
+        if (!_chunkInPosition(left_neighboor)) {
+            left = true;
+            next--;
+        }
+        Vec3 back_neighboor = chunk_pos + Vec3f{0.0f, 0.0f, (float)-Chunk::DEPTH};
+        if (!_chunkInPosition(back_neighboor)) {
+            back = true;
+            next--;
+        }
+        Vec3 front_neighboor = chunk_pos + Vec3f{0.0f, 0.0f, (float)Chunk::DEPTH};
+        if (!_chunkInPosition(front_neighboor)) {
+            front = true;
+            next--;
+        }
+
+        if (left) {
+            _generateChunks(left_neighboor, chunk_nbr-2, next);
+        }
+        if (right) {
+            _generateChunks(right_neighboor, chunk_nbr-1, next);
+        }
+        if (back) {
+            _generateChunks(back_neighboor, chunk_nbr-3, next);
+        }
+        if (front) {
+            _generateChunks(front_neighboor, chunk_nbr-4, next);
+        }
+    }
+
+    bool _chunkInPosition(Vec3f chunk_pos) {
+        for (const auto& c: m_chunks) {
+            if (c.getWorldPos() == chunk_pos) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
@@ -67,35 +120,37 @@ void World::setRenderDistance(uint8_t render_distance) {
 
 VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
     size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
-    size_t chunk_id = index / Chunk::SIZE;
+    size_t chunk_id = (size_t) (index / Chunk::SIZE);
     if (chunk_id > m_impl->m_chunks.size()) {
         std::cout << chunk_id << std::endl;
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
         return 0;
     }
     ChunkCoord chunk_pos{
-        (int) (pos.x / (chunk_id * Chunk::WIDTH)),
-        (int) (pos.y / (chunk_id * Chunk::HEIGHT)),
-        (int) (pos.z / (chunk_id * Chunk::DEPTH))
+        (int) (pos.x - (chunk_id * Chunk::WIDTH)),
+        (int) (pos.y - (chunk_id * Chunk::HEIGHT)),
+        (int) (pos.z - (chunk_id * Chunk::DEPTH))
     };
     return m_impl->m_chunks[chunk_id].setVoxel(chunk_pos, new_voxel);
 }
 
 const VoxelType& World::getVoxel(WorldCoord pos) const {
     size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
-    std::cout << index << " " << index / CHUNK_SIZE << std::endl;
-    size_t chunk_id = (size_t) (index / Chunk::WIDTH);
+    size_t chunk_id = (size_t) (index / Chunk::SIZE);
     if (chunk_id > m_impl->m_chunks.size()) {
-        std::cout << chunk_id << std::endl;
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
         return m_impl->m_voxel_types[0];
     }
     ChunkCoord chunk_pos{
-        (int) (pos.x / (chunk_id * Chunk::WIDTH)),
-        (int) (pos.y / (chunk_id * Chunk::HEIGHT)),
-        (int) (pos.z / (chunk_id * Chunk::DEPTH))
+        (int) (pos.x - (chunk_id * Chunk::WIDTH)),
+        (int) (pos.y - (chunk_id * Chunk::HEIGHT)),
+        (int) (pos.z - (chunk_id * Chunk::DEPTH))
     };
     return m_impl->m_chunks[chunk_id].getVoxel(chunk_pos);
+}
+
+std::vector<Chunk>& World::getChunks() {
+    return m_impl->m_chunks;
 }
 
 void World::update() {

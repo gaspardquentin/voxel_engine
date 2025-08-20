@@ -62,14 +62,14 @@ const std::array<std::array<Vertex, 4>, 6> VOXEL_FACE_VERTICES = {
     }
 };
 
-void MeshBuilder::emitFace(MeshData& mesh_data, Vec3i voxel_pos, VoxelFace face, const VoxelType& voxel) const {
+void MeshBuilder::emitFace(MeshData& mesh_data, const Chunk& chunk, Vec3i voxel_pos, VoxelFace face, const VoxelType& voxel) const {
     // Before pushing, record the starting index
     uint32_t startIndex = static_cast<uint32_t>(mesh_data.vertices.size());
 
     // Push the 4 vertices for this face
     for (const Vertex& v: VOXEL_FACE_VERTICES[static_cast<uint8_t>(face)]) {
         mesh_data.vertices.push_back({
-            Vec3f{voxel_pos} + v.pos,
+            Vec3f{voxel_pos} + chunk.getWorldPos() + v.pos,
             v.normal,
             v.uv
          });
@@ -106,7 +106,7 @@ MeshData MeshBuilder::buildMesh(const Chunk& chunk) const {
                     }
 
                     if (neighbor.isTransparent()) {
-                        emitFace(mesh_data, {x, y, z}, face, voxel);
+                        emitFace(mesh_data, chunk, {x, y, z}, face, voxel);
                     }
                 }
 	    }

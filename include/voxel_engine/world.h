@@ -7,10 +7,11 @@
 #include "callbacks.h"
 #include "texture.h"
 #include "voxel_types.h"
+#include "chunk.h"
 
 
 // render distance in chunk nbrs
-#define DEFAULT_RENDER_DISTANCE 1//8
+#define DEFAULT_RENDER_DISTANCE 8
 
 class World {
 public:
@@ -26,6 +27,8 @@ public:
     // returns old voxel value
     VoxelID setVoxel(WorldCoord pos, VoxelID new_voxel);
     const VoxelType& getVoxel(WorldCoord pos) const;
+
+    std::vector<Chunk>& getChunks();
 
     void setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture);
     World(uint8_t render_distance);
