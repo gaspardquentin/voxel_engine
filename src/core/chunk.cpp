@@ -7,6 +7,25 @@ bool Chunk::positionInChunk(Vec3i pos) const {
             pos.z < Chunk::DEPTH;
 }
 
+bool Chunk::worldPositionInChunk(Vec3f world_pos) const {
+    return  world_pos.x >= m_world_pos.x && world_pos.x < m_world_pos.x + Chunk::WIDTH &&
+            world_pos.y >= m_world_pos.y && world_pos.y < m_world_pos.y + Chunk::HEIGHT &&
+            world_pos.z >= m_world_pos.z && world_pos.z < m_world_pos.z + Chunk::DEPTH;
+}
+
+Vec3i Chunk::getChunkPosFromWorld(Vec3f world_pos) const {
+    if (!worldPositionInChunk(world_pos)) {
+        std::cerr << "<voxeng> WARNING: Voxel at " << world_pos << " out of Chunk bounds.\n";
+        return {0, 0, 0};
+    }
+    // TODO: make sure to get the exact block (issue converting float to int, might pick the neighboor)
+    return Vec3i(
+        static_cast<int>(world_pos.x) - m_world_pos.x,
+        static_cast<int>(world_pos.y) - m_world_pos.y,
+        static_cast<int>(world_pos.z) - m_world_pos.z
+    );
+}
+
 const VoxelType& Chunk::getVoxel(Vec3i pos) const {
     size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
     if (!positionInChunk(pos)) {

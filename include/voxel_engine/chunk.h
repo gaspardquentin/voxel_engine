@@ -26,6 +26,8 @@ public:
     // Checks wether the chunk coord is not out of bounds 
     // (does not check if world coord is in this chunk)
     bool positionInChunk(Vec3i pos) const;
+    bool worldPositionInChunk(Vec3f world_pos) const;
+    Vec3i getChunkPosFromWorld(Vec3f world_pos) const;
     const Vec3f& getWorldPos() const { return m_world_pos; }
     inline void setRendererId(size_t id) { m_renderer_id = id; }
     inline size_t getRendererId() const { return m_renderer_id; }
