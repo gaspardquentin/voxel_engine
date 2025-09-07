@@ -3,6 +3,13 @@ cmake_minimum_required(VERSION 3.16)
 project(VoxelEngine VERSION 1.0.0 LANGUAGES CXX)
 
 # =============================================================================
+# CMAKE POLICIES
+# =============================================================================
+
+# Fix the FetchContent timestamp warning
+cmake_policy(SET CMP0135 NEW)
+
+# =============================================================================
 # PROJECT OPTIONS
 # =============================================================================
 
@@ -17,6 +24,19 @@ option(VOXEL_ENGINE_BUILD_SHARED "Build as shared library" OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Setup Google Test early if needed
+if(VOXEL_ENGINE_BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
 
 # Debug/Release configurations
 if(NOT CMAKE_BUILD_TYPE)
@@ -41,7 +61,10 @@ endif()
 # =============================================================================
 
 # OpenGL
-#find_package(OpenGL REQUIRED)
+
+if (LINUX)
+    find_package(OpenGL REQUIRED)
+endif()
 
 # GLEW for OpenGL loading
 find_package(GLEW REQUIRED)
@@ -80,12 +103,13 @@ set(VOXEL_ENGINE_PUBLIC_HEADERS
     include/voxel_engine/callbacks.h
     include/voxel_engine/math_utils.h
     include/voxel_engine/texture.h
+    include/voxel_engine/chunk.h
 )
 
 # Internal headers
 set(VOXEL_ENGINE_INTERNAL_HEADERS
     #src/internal/chunk.h
-    src/core/chunk.h
+    #src/core/chunk.h
     src/rendering/renderer.h
     src/rendering/mesh_builder.h
     src/rendering/shader.h
@@ -121,10 +145,16 @@ target_include_directories(VoxelEngine
 )
 
 # Link dependencies
+if (LINUX)
+    set(OPENGL_GL OpenGL::GL)
+else()
+    set(OPENGL_GL)
+endif()
+
 target_link_libraries(VoxelEngine
     PUBLIC
         GLEW::GLEW
-        #OpenGL::GL
+        ${OPENGL_GL}
         glm::glm
 )
 
@@ -132,7 +162,7 @@ target_link_libraries(VoxelEngine
 # You could also load them at runtime
 set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
 set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
-target_compile_definitions(VoxelEngine PUBLIC 
+target_compile_definitions(VoxelEngine PUBLIC
     VOXEL_ENGINE_SHADER_DIR="${SHADER_DIR}"
     VOXEL_ENGINE_ASSETS_DIR="${ASSETS_DIR}"
 )
@@ -146,8 +176,8 @@ if(VOXEL_ENGINE_BUILD_EXAMPLES)
     add_executable(simple_demo
         examples/simple/main.cpp
     )
-    target_link_libraries(simple_demo 
-        VoxelEngine::VoxelEngine 
+    target_link_libraries(simple_demo
+        VoxelEngine::VoxelEngine
         glfw
         #GLEW::GLEW
         #OpenGL::GL
@@ -157,8 +187,8 @@ if(VOXEL_ENGINE_BUILD_EXAMPLES)
     #add_executable(terrain_gen
     #examples/terrain_gen/main.cpp
     #)
-    #target_link_libraries(terrain_gen 
-    #VoxelEngine::VoxelEngine 
+    #target_link_libraries(terrain_gen
+    #VoxelEngine::VoxelEngine
     #glfw
     #)
 
@@ -174,21 +204,27 @@ endif()
 
 if(VOXEL_ENGINE_BUILD_TESTS)
     enable_testing()
-    
-    # Find or build a simple test framework (or use built-in CTest)
+
+    # Create test executable
     add_executable(voxel_tests
         tests/test_world.cpp
         tests/test_chunks.cpp
         #tests/test_math.cpp
     )
-    
-    target_link_libraries(voxel_tests 
+
+    target_link_libraries(voxel_tests
         VoxelEngine::VoxelEngine
+        GTest::gtest_main
         glfw  # For OpenGL context in tests
     )
-    
+
+    # Use GoogleTest's test discovery
+    include(GoogleTest)
+    gtest_discover_tests(voxel_tests)  # Fixed: was "hello_test", should be "voxel_tests"
+
+    # Also add as a CTest test
     add_test(NAME VoxelEngineTests COMMAND voxel_tests)
-    
+
     set_target_properties(voxel_tests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
     )

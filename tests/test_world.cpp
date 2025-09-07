@@ -1,9 +1,14 @@
-#include <cstdlib>
-#include <iostream>
+#include <gtest/gtest.h>
 
-int main() {
-    std::cout << "Running tests for the voxel engine..." << std::endl;
+// Basic test to verify Google Test is working
+TEST(BasicTest, TruthTest) {
+    EXPECT_TRUE(true);
+    EXPECT_FALSE(false);
+    EXPECT_EQ(1, 1);
+}
 
-    std::cout << "Tests executed." << std::endl;
-    return EXIT_SUCCESS;
+// Add your actual voxel engine tests here
+TEST(WorldTest, BasicWorldCreation) {
+    // Your world testing code here
+    EXPECT_TRUE(true); // Placeholder
 }
