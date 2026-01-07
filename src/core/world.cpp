@@ -1,8 +1,12 @@
 #include "voxel_engine/world.h"
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/chunk.h"
+#include "voxel_engine/math_utils.h"
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <queue>
+#include <set>
 
 class World::Impl {
 public:
@@ -24,62 +28,40 @@ public:
 
     void generateChunks() {
         int render_dist_sq = m_render_distance * m_render_distance;
-        _generateChunks({0.0f, 0.0f, 0.0f}, render_dist_sq, render_dist_sq-1);
+        _generateChunksBFS(render_dist_sq);
     }
 
-    // TODO: replace with BFS generation
-    void _generateChunks(Vec3f chunk_pos, int chunk_nbr, int next) {
-        if (chunk_nbr <= 0) {
-            return;
-        }
-        m_chunks.push_back({m_voxel_types, chunk_pos});
-        m_chunks.back().setRendererId(m_chunks.size()-1);
 
-        chunk_nbr = next;
-        bool left, right, back, front;
-        left = right = back = front = false;
-        Vec3f right_neighboor = chunk_pos + Vec3f{(float)Chunk::WIDTH, 0.0f, 0.0f};
-        if (!_chunkInPosition(right_neighboor)) {
-            right = true;
-            next--;
-        }
-        Vec3 left_neighboor = chunk_pos + Vec3f{-((float)Chunk::WIDTH), 0.0f, 0.0f};
-        if (!_chunkInPosition(left_neighboor)) {
-            left = true;
-            next--;
-        }
-        Vec3 back_neighboor = chunk_pos + Vec3f{0.0f, 0.0f, -((float)Chunk::DEPTH)};
-        if (!_chunkInPosition(back_neighboor)) {
-            back = true;
-            next--;
-        }
-        Vec3 front_neighboor = chunk_pos + Vec3f{0.0f, 0.0f, (float)Chunk::DEPTH};
-        if (!_chunkInPosition(front_neighboor)) {
-            front = true;
-            next--;
-        }
+    /**
+     * Generates the world's chunks.
+     * @param nb_to_generate the number of chunks to generate
+     */
+    void _generateChunksBFS(int nb_to_generate) {
+        std::queue<Vec3f> bfs_queue;
+        Vec3f chunk_pos = {0.0f, 0.0f, 0.0f};
+        bfs_queue.push(chunk_pos);
+        int nb_generated = 0;
+        std::vector<Vec3f> bfs_visited;
+        while (!bfs_queue.empty() && nb_generated < nb_to_generate) {
+            chunk_pos = bfs_queue.front();
+            bfs_queue.pop();
+            m_chunks.push_back({m_voxel_types, chunk_pos});
+            m_chunks.back().setRendererId(nb_generated);
+            nb_generated++;
+            const std::vector<Vec3f> neighboors = {
+                chunk_pos + Vec3f{(float)Chunk::WIDTH, 0.0f, 0.0f}, // right
+                chunk_pos + Vec3f{-((float)Chunk::WIDTH), 0.0f, 0.0f}, // left
+                chunk_pos + Vec3f{0.0f, 0.0f, -((float)Chunk::DEPTH)}, // back
+                chunk_pos + Vec3f{0.0f, 0.0f, (float)Chunk::DEPTH} // front
+            };
 
-        if (left) {
-            _generateChunks(left_neighboor, chunk_nbr-2, next);
-        }
-        if (right) {
-            _generateChunks(right_neighboor, chunk_nbr-1, next);
-        }
-        if (back) {
-            _generateChunks(back_neighboor, chunk_nbr-3, next);
-        }
-        if (front) {
-            _generateChunks(front_neighboor, chunk_nbr-4, next);
-        }
-    }
-
-    bool _chunkInPosition(Vec3f chunk_pos) {
-        for (const auto& c: m_chunks) {
-            if (c.getWorldPos() == chunk_pos) {
-                return true;
+            for (auto neighboor: neighboors) {
+                if (std::find(bfs_visited.begin(), bfs_visited.end(), neighboor) == bfs_visited.end()) {
+                    bfs_queue.push(neighboor);
+                    bfs_visited.push_back(neighboor);
+                }
             }
         }
-        return false;
     }
 
     size_t getChunkId(WorldCoord pos) const;
@@ -172,12 +154,21 @@ const VoxelType& World::getVoxel(WorldCoord pos) const {
     return m_impl->m_chunks[chunk_id].getVoxel(chunk_pos);
 }
 
+
+/* TODO: remove this or implement this
+std::optional<Vec3f> World::getVoxelTopLeftPos(Vec3f pos_inside) const {
+    return {};
+}
+*/
+
+
 std::vector<Chunk>& World::getChunks() {
     return m_impl->m_chunks;
 }
 
 void World::update() {
-
+    //TODO: implement this (if needed) (this might be great to use callbacks there)
+    std::cerr << "Word::update(): TODO: implement this\n";
 }
 
 void World::setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture) {
