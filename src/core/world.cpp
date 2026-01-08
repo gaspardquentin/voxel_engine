@@ -162,7 +162,7 @@ std::optional<Vec3f> World::getVoxelTopLeftPos(Vec3f pos_inside) const {
 */
 
 
-std::vector<Chunk>& World::getChunks() {
+std::vector<Chunk>& World::getChunks() const {
     return m_impl->m_chunks;
 }
 

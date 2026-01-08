@@ -5,11 +5,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 
+#include "rendering/mesh_builder.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/chunk.h"
 #include "opengl_texture.h"
 
-void Renderer::render(World& world, const Camera& camera) {
+void RenderPipeline::render(World& world, const Camera& camera) {
     m_shader_prog.bind();
 
     // MVP matrices calc
@@ -32,7 +33,7 @@ void Renderer::render(World& world, const Camera& camera) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for (Chunk& c: world.getChunks()) {
-	ChunkRenderer& cr = m_chunk_renderers[c.getRendererId()];
+	GLMesh& cr = m_chunk_renderers[c.getRendererId()];
 	if (c.update()) {
 	    MeshData md = m_mesh_builder.buildMesh(c);
 	    cr.upload(md);
@@ -79,7 +80,7 @@ void Renderer::render(World& world, const Camera& camera) {
   }
 
 
-void Renderer::loadTextures(World& world) {
+void RenderPipeline::loadTextures(World& world) {
     int voxel_types_nbr = world.getVoxelTypes().size();
     for (int i = 1; i < voxel_types_nbr; i++) {
 	const Texture& old_texture = *(world.getVoxelType(i).getTexture());
@@ -91,67 +92,19 @@ void Renderer::loadTextures(World& world) {
 }
 
 
-void Renderer::generateChunkRenderers(int chunk_nbr) {
+void RenderPipeline::generateChunkRenderers(int chunk_nbr) {
     for (int i = 0; i < chunk_nbr ; i++) {
 	m_chunk_renderers.push_back({});
     }
 }
 
-void Renderer::destroy() {
-    for (ChunkRenderer& cr: m_chunk_renderers) {
+void RenderPipeline::destroy() {
+    for (GLMesh& cr: m_chunk_renderers) {
 	cr.destroy();
     }
 }
 
-void ChunkRenderer::upload(const MeshData& mesh_data) {
-    index_count = static_cast<GLsizei>(mesh_data.indices.size());
 
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+void UIRenderPass::upload(const MeshData& mesh_data) {
 
-    glBindVertexArray(vao);
-
-    // vertex buffer
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-		 mesh_data.vertices.size() * sizeof(Vertex),
-		 mesh_data.vertices.data(),
-		 GL_STATIC_DRAW);
-
-    // index buffer
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		 mesh_data.indices.size() * sizeof(uint32_t),
-		 mesh_data.indices.data(),
-		 GL_STATIC_DRAW);
-
-    // vertex layout
-    GLuint stride = sizeof(Vertex);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-
-    // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, pos));
-    // normal
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
-    // uv
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, uv));
-
-    //glBindBuffer(GL_ARRAY_BUFFER, 0); TODO: what is this ?
-    glBindVertexArray(0);
-
-}
-
-void ChunkRenderer::draw() const {
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-}
-
-void ChunkRenderer::destroy() {
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-    glDeleteVertexArrays(1, &vao);
 }

@@ -16,11 +16,8 @@ struct MeshData {
   std::vector<Vertex> vertices;   // positions, normals, texcoords, etc.
   std::vector<uint32_t> indices;
   inline void clear() { 
-    std::cout << "causing troubles ?" << std::endl;
     vertices.clear();
-    std::cout << "No." << std::endl;
     indices.clear();
-    std::cout << "No." << std::endl;
   }
 };
 

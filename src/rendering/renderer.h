@@ -5,41 +5,26 @@
 #include <array>
 #include <string>
 
+#include "rendering/opengl/gl_mesh.h"
+#include "rendering/opengl/opengl_render_pass.h"
 #include "voxel_engine/world.h"
 #include "shader.h"
 #include "camera.h"
 #include "mesh_builder.h"
 
-class ChunkRenderer {
-  GLuint vao = 0, vbo = 0, ebo = 0;
-  GLsizei index_count = 0;
-
+class UIRenderPass: public GLRenderPass {
 public:
-  ChunkRenderer() = default;
-  ChunkRenderer(const ChunkRenderer&) = delete;
-  ChunkRenderer& operator=(const ChunkRenderer&) = delete;
-  ChunkRenderer(ChunkRenderer&& o) noexcept { *this = std::move(o); }
-  ChunkRenderer& operator=(ChunkRenderer&& o) noexcept {
-    vao = o.vao; vbo = o.vbo; ebo = o.ebo; index_count = o.index_count;
-    o.vao = o.vbo = o.ebo = 0; o.index_count = 0;
-    return *this;
-  }
-  ~ChunkRenderer() {}
-
-  inline void test() { std::cout << vao << std::endl; }
-  void upload(const MeshData& mesh_data);
-  void draw() const;
-  void destroy();
+  void upload(const MeshData& mesh_data) override;
 };
 
-class Renderer {
+class RenderPipeline {
   Shader m_shader_prog;
   MeshBuilder m_mesh_builder;
-  std::vector<ChunkRenderer> m_chunk_renderers;
+  std::vector<GLMesh> m_chunk_renderers;
   unsigned int m_screen_width, m_screen_height;
 
 public:
-  Renderer(std::string vertex_shader_path,
+  RenderPipeline(std::string vertex_shader_path,
            std::string fragment_shader_path,
            unsigned int screen_width,
            unsigned int screen_height):

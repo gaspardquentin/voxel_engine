@@ -9,7 +9,7 @@ class VoxelEngine::Impl {
 public:
     World m_world;
     Camera m_camera;
-    Renderer m_renderer;
+    RenderPipeline m_renderer;
 
     Impl(unsigned int screen_width, unsigned int screen_height):
         m_camera({0.0f, 0.0f, 3.0f}),//TODO: change this
@@ -50,8 +50,6 @@ void VoxelEngine::processMovementCamera(float xoffset, float yoffset, bool const
 void VoxelEngine::processZoomCamera(float yoffset) {
     m_impl->m_camera.processZoom(yoffset);
 }
-
-
 
 bool VoxelEngine::playerPlaceVoxel(uint8_t max_reach, VoxelID voxel) {
     if (voxel == 0)
