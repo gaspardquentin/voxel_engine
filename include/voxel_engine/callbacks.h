@@ -6,9 +6,10 @@
 #include "voxel_types.h"
 #include "math_utils.h"
 
-using ChunkCoord = Vec3i;
+using ChunkCoord = Vec3u;
 using WorldCoord = Vec3;
 
+/* TODO: redefine and implement callbacks once the engine works fine
 using ChunkGeneratorCallback = std::function<void(ChunkCoord coord, VoxelID* chunkData)>;
 using VoxelChangeCallback = std::function<void(WorldCoord pos, VoxelID oldVoxel, VoxelID newVoxel)>;
 
@@ -20,3 +21,5 @@ inline ChunkGeneratorCallback DEFAULT_CHUNK_GENERATOR = [](ChunkCoord coord, Vox
 inline VoxelChangeCallback DEFAULT_VOXEL_CHANGE_FUNC = [](WorldCoord pos, VoxelID oldVoxel, VoxelID newVoxel) {
     return;
 };
+
+*/

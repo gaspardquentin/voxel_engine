@@ -82,18 +82,7 @@ find_package(glm REQUIRED)
 # =============================================================================
 
 # Source files
-set(VOXEL_ENGINE_SOURCES
-    src/core/voxel_engine.cpp
-    src/core/world.cpp
-    src/core/chunk.cpp
-    # src/core/math_utils.cpp
-    src/rendering/renderer.cpp
-    src/rendering/mesh_builder.cpp
-    src/rendering/stb_image.cpp
-    src/rendering/shader.cpp
-    src/rendering/camera.cpp
-    src/rendering/texture.cpp
-)
+file(GLOB_RECURSE VOXEL_ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 # Public headers
 set(VOXEL_ENGINE_PUBLIC_HEADERS
@@ -107,17 +96,7 @@ set(VOXEL_ENGINE_PUBLIC_HEADERS
 )
 
 # Internal headers
-set(VOXEL_ENGINE_INTERNAL_HEADERS
-    #src/internal/chunk.h
-    #src/core/chunk.h
-    src/rendering/renderer.h
-    src/rendering/mesh_builder.h
-    src/rendering/shader.h
-    src/rendering/camera.h
-    src/rendering/stb_image.h
-    src/rendering/opengl_texture.h
-    src/config.h
-)
+file(GLOB_RECURSE VOXEL_ENGINE_INTERNAL_HEADERS CONFIGURE_DEPENDS "src/*.h")
 
 # Create library
 if(VOXEL_ENGINE_BUILD_SHARED)

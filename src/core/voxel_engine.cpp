@@ -2,34 +2,42 @@
 #include "voxel_engine/world.h"
 #include "voxel_engine/math_utils.h"
 #include "rendering/camera.h"
-#include "rendering/renderer.h"
-#include <iostream>
+#include "rendering/render_pipeline.h"
+#include "rendering/shader_manager.h"
+#include "rendering/passes/glui_render_pass.h"
 
 class VoxelEngine::Impl {
 public:
     World m_world;
     Camera m_camera;
-    RenderPipeline m_renderer;
+    ShaderManager m_shader_manager;
+    RenderPipeline m_render_pipeline;
 
-    Impl(unsigned int screen_width, unsigned int screen_height):
-        m_camera({0.0f, 0.0f, 3.0f}),//TODO: change this
-        m_renderer(
-            VOXEL_ENGINE_SHADER_DIR  "/vertex.vert",
-            VOXEL_ENGINE_SHADER_DIR  "/fragment.frag",
-            screen_width,
-            screen_height
-        )
-    {}
-    ~Impl() {
-        m_renderer.destroy();
+    Impl(const VoxelEngineConfig& config):
+        m_camera({0.0f, 0.0f, 3.0f}, config.width, config.height) //TODO: change this
+    {
+        m_shader_manager.load("world", config.world_vertex_shader, config.world_fragment_shader);
+        m_shader_manager.load("ui", config.ui_vertex_shader, config.ui_fragment_shader);
+
+        m_render_pipeline.addPass<GLWorldRenderPass>(
+            *(m_shader_manager.get("world")),
+            m_world
+        );
+        m_render_pipeline.addPass<GLUIRenderPass>(
+            *(m_shader_manager.get("ui")));
+
+        auto *world_pass = m_render_pipeline.getPass<GLWorldRenderPass>();
+        if (world_pass) {
+            world_pass->loadTextures(m_world);
+            world_pass->initChunkMeshes(m_world.getChunks().size());
+        }
     }
+
+    ~Impl() = default;
 };
 
-VoxelEngine::VoxelEngine(unsigned int screen_width, unsigned int screen_height):
-    m_impl(new VoxelEngine::Impl(screen_width, screen_height)) {
-    m_impl->m_renderer.loadTextures(m_impl->m_world);
-    m_impl->m_renderer.generateChunkRenderers(m_impl->m_world.getChunks().size());
-}
+VoxelEngine::VoxelEngine(const VoxelEngineConfig& config):
+    m_impl(new VoxelEngine::Impl(config)) {}
 
 VoxelEngine::~VoxelEngine() { delete m_impl; }
 
@@ -38,12 +46,13 @@ World& VoxelEngine::getWorld() {
 }
 
 void VoxelEngine::render() {
-    m_impl->m_renderer.render(m_impl->m_world, m_impl->m_camera);
+    m_impl->m_render_pipeline.render(m_impl->m_camera);
 }
 
 void VoxelEngine::processMovementPlayer(Movement mov, float delta_time) {
     m_impl->m_camera.processMovement(mov, delta_time);
 }
+
 void VoxelEngine::processMovementCamera(float xoffset, float yoffset, bool constrain_pitch) {
     m_impl->m_camera.processEulerMovement(xoffset, yoffset, constrain_pitch);
 }

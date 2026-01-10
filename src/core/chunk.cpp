@@ -1,7 +1,7 @@
 #include "voxel_engine/chunk.h"
 #include <iostream>
 
-bool Chunk::positionInChunk(Vec3i pos) const {
+bool Chunk::positionInChunk(ChunkCoord pos) const {
     return  pos.x < Chunk::WIDTH &&
             pos.y < Chunk::HEIGHT &&
             pos.z < Chunk::DEPTH;
@@ -13,20 +13,20 @@ bool Chunk::worldPositionInChunk(Vec3f world_pos) const {
             world_pos.z >= m_world_pos.z && world_pos.z < m_world_pos.z + Chunk::DEPTH;
 }
 
-Vec3i Chunk::getChunkPosFromWorld(Vec3f world_pos) const {
+ChunkCoord Chunk::getChunkPosFromWorld(Vec3f world_pos) const {
     if (!worldPositionInChunk(world_pos)) {
         std::cerr << "<voxeng> WARNING: Voxel at " << world_pos << " out of Chunk bounds.\n";
         return {0, 0, 0};
     }
     // TODO: make sure to get the exact block (issue converting float to int, might pick the neighboor)
-    return Vec3i(
-        static_cast<int>(world_pos.x) - m_world_pos.x,
-        static_cast<int>(world_pos.y) - m_world_pos.y,
-        static_cast<int>(world_pos.z) - m_world_pos.z
+    return ChunkCoord(
+        static_cast<unsigned int>(world_pos.x - m_world_pos.x),
+        static_cast<unsigned int>(world_pos.y - m_world_pos.y),
+        static_cast<unsigned int>(world_pos.z - m_world_pos.z)
     );
 }
 
-const VoxelType& Chunk::getVoxel(Vec3i pos) const {
+const VoxelType& Chunk::getVoxel(ChunkCoord pos) const {
     size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
     if (!positionInChunk(pos)) {
         std::cerr << "<voxeng> WARNING: Voxel at " << pos << " out of Chunk bounds.\n";
@@ -42,7 +42,7 @@ const VoxelType& Chunk::getVoxel(Vec3i pos) const {
 }
 
 
-VoxelID Chunk::setVoxel(Vec3i pos, VoxelID new_voxel) {
+VoxelID Chunk::setVoxel(ChunkCoord pos, VoxelID new_voxel) {
     if (!positionInChunk(pos)) {
         std::cerr << "<voxeng> WARNING: Voxel at " << pos << " out of Chunk bounds.\n";
         return 0;
@@ -76,9 +76,9 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
 {
     // TODO: replace with better chunk generation
 
-    for (int x = 0; x < CHUNK_WIDTH; x++) {
-        for (int y = 0; y < CHUNK_HEIGHT; y++) {
-            for (int z = 0; z < CHUNK_DEPTH; z++) {
+    for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
+        for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
+            for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
                 if (y < CHUNK_HEIGHT/2) { // /2
                     setVoxel({x,y,z}, 1);
                 } else {
@@ -88,9 +88,9 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
         }
     }
 
-    Vec3i pos{CHUNK_WIDTH-1, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-1};
+    ChunkCoord pos{CHUNK_WIDTH-1, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-1};
     setVoxel(pos, 0);
-    pos = Vec3i{CHUNK_WIDTH-3, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-3};
+    pos = ChunkCoord{CHUNK_WIDTH-3, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-3};
     setVoxel(pos, 0);
 
     setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2, CHUNK_DEPTH-1}, 1);

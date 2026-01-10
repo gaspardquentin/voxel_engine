@@ -31,6 +31,8 @@ class Camera {
   float m_mouse_sensitivity = MOUSE_SENSITIVITY; //TODO: maybe move this in voxelengine parameter (runtime)
   float m_zoom = CAMERA_DEFAULT_ZOOM;
 
+  unsigned int m_screen_width = 800; // Default
+  unsigned int m_screen_height = 600; // Default
 
   void updateCameraVectors()
   {
@@ -45,11 +47,21 @@ class Camera {
   }
 
 public:
-  Camera(Vec3f position): 
+  Camera(Vec3f position, unsigned int width, unsigned int height): 
     m_pos(position),
-    m_world_up({0.0f, 1.0f, 0.0f}) {
+    m_world_up({0.0f, 1.0f, 0.0f}),
+    m_screen_width(width),
+    m_screen_height(height) {
     updateCameraVectors();
   }
+
+  void setViewportSize(unsigned int width, unsigned int height) {
+    m_screen_width = width;
+    m_screen_height = height;
+  }
+
+  unsigned int getWidth() const { return m_screen_width; }
+  unsigned int getHeight() const { return m_screen_height; }
 
   #ifdef RENDERING_OPENGL
   glm::mat4 getViewMatrix() const
@@ -58,6 +70,15 @@ public:
     glm::vec3 front(m_front.x, m_front.y, m_front.z);
     glm::vec3 up(m_up.x, m_up.y, m_up.z);
     return glm::lookAt(pos, pos + front, up);
+  }
+
+  glm::mat4 getProjectionMatrix() const {
+    return glm::perspective(
+      glm::radians(m_zoom),
+      (float)m_screen_width / (float)m_screen_height,
+      0.1f,
+      3000.0f
+    );
   }
   #endif
 

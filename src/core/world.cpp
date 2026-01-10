@@ -10,16 +10,17 @@
 
 class World::Impl {
 public:
-    ChunkGeneratorCallback m_chunk_generator;
-    VoxelChangeCallback m_voxel_change_fun;
+    //TODO: use this when callback system is implemented
+    //ChunkGeneratorCallback m_chunk_generator;
+    //VoxelChangeCallback m_voxel_change_fun;
     std::vector<VoxelType> m_voxel_types;
     std::vector<Chunk> m_chunks;
     uint8_t m_render_distance;
 
     Impl(uint8_t render_distance):
         m_render_distance(render_distance),
-        m_chunk_generator(DEFAULT_CHUNK_GENERATOR),
-        m_voxel_change_fun(DEFAULT_VOXEL_CHANGE_FUNC),
+        //m_chunk_generator(DEFAULT_CHUNK_GENERATOR),
+        //m_voxel_change_fun(DEFAULT_VOXEL_CHANGE_FUNC),
         m_voxel_types(DEFAULT_VOXEL_TYPES) {
         generateChunks();
     }
@@ -45,6 +46,7 @@ public:
         while (!bfs_queue.empty() && nb_generated < nb_to_generate) {
             chunk_pos = bfs_queue.front();
             bfs_queue.pop();
+            std::cout << chunk_pos << std::endl;
             m_chunks.push_back({m_voxel_types, chunk_pos});
             m_chunks.back().setRendererId(nb_generated);
             nb_generated++;
@@ -73,6 +75,7 @@ World::World(uint8_t render_distance): m_impl(new Impl(render_distance)) {}
 World::~World() { delete m_impl; }
 
 
+/* TODO: use those once callback system is implemented
 void World::setChunkGenerator(ChunkGeneratorCallback callback) {
     m_impl->m_chunk_generator = callback;
 }
@@ -80,6 +83,7 @@ void World::setChunkGenerator(ChunkGeneratorCallback callback) {
 void World::setVoxelChange(VoxelChangeCallback callback) {
     m_impl->m_voxel_change_fun = callback;
 }
+*/
 
 void World::setVoxelTypes(std::vector<VoxelType> voxel_types) {
     m_impl->m_voxel_types = voxel_types;
@@ -102,6 +106,9 @@ void World::setRenderDistance(uint8_t render_distance) {
     m_impl->m_render_distance = render_distance;
 }
 
+uint8_t World::getRenderDistance() const {
+    return m_impl->m_render_distance;
+}
 
 VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
     size_t chunk_id = m_impl->getChunkId(pos);

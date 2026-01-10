@@ -120,7 +120,11 @@ int main() {
     /* ====== engine demo ======= */
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
-    VoxelEngine engine{SCREEN_WIDTH, SCREEN_HEIGHT}; //TODO: maybe separate engine from renderer
+    VoxelEngineConfig engine_conf{
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    };
+    VoxelEngine engine{engine_conf}; //TODO: maybe separate engine from renderer
     gVoxelEngine = &engine;
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = static_cast<float>(glfwGetTime());

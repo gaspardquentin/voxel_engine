@@ -5,5 +5,5 @@
 #include "rendering/camera.h"
 class IRenderPass {
 public:
-  virtual void render(const World& world, const Camera& camera);
+  virtual void render(const Camera& camera) = 0;
 };

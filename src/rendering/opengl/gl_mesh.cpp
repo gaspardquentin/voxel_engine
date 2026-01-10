@@ -41,9 +41,9 @@ void GLMesh::upload(const MeshData& mesh_data) {
 
 }
 
-void GLMesh::draw() const {
+void GLMesh::draw(GLenum mode) const {
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(mode, index_count, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 

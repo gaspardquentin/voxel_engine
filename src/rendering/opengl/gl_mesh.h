@@ -17,11 +17,13 @@ public:
     o.vao = o.vbo = o.ebo = 0; o.index_count = 0;
     return *this;
   }
-  ~GLMesh() {}
+  ~GLMesh() {
+    destroy();
+  }
 
-  inline void test() { std::cout << vao << std::endl; }
+  inline void test() { std::cout << vao << std::endl; } //TODO: maybe remove this
   void upload(const MeshData& mesh_data);
-  void draw() const;
+  void draw(GLenum mode = GL_TRIANGLES) const;
   void destroy();
 };
 

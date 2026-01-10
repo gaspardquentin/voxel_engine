@@ -15,8 +15,9 @@
 
 class World {
 public:
-    void setChunkGenerator(ChunkGeneratorCallback callback);
-    void setVoxelChange(VoxelChangeCallback callback);
+    // TODO: use those when callback system is implemented
+    //void setChunkGenerator(ChunkGeneratorCallback callback);
+    //void setVoxelChange(VoxelChangeCallback callback);
 
     // Important : the id 0 should imperatively be for AIR
     void setVoxelTypes(std::vector<VoxelType> voxel_types);
@@ -37,6 +38,7 @@ public:
 
     void update();
     void setRenderDistance(uint8_t render_distance);
+    uint8_t getRenderDistance() const;
 
 private:
     class Impl;

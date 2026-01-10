@@ -126,3 +126,4 @@ struct Vec3T {
 using Vec3 = Vec3T<float>;
 using Vec3f = Vec3T<float>;
 using Vec3i = Vec3T<int>;
+using Vec3u = Vec3T<unsigned int>;
