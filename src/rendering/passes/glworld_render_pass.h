@@ -1,5 +1,6 @@
 #include "rendering/interface/irender_pass.h"
 #include "rendering/opengl/gl_mesh.h"
+#include "rendering/opengl_texture_array.h"
 #include "rendering/shader.h"
 #include "rendering/world_mesh_builder.h"
 
@@ -10,6 +11,8 @@ class GLWorldRenderPass: public IRenderPass {
   WorldMeshBuilder m_world_mesh_builder;
   const Shader& m_shader_prog;
   const World& m_world;
+  //TODO: maybe move this elsewhere idk
+  OpenGLTextureArray m_textures;
   //std::vector<std::unique_ptr<GLMesh>> chunk_meshes;
   std::vector<GLMesh> m_chunk_meshes;
 

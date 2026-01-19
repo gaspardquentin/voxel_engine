@@ -34,7 +34,7 @@ void GLMesh::upload(const MeshData& mesh_data) {
     // normal
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
     // uv
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, uv));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, uv));
 
     //glBindBuffer(GL_ARRAY_BUFFER, 0); TODO: what is this ?
     glBindVertexArray(0);

@@ -6,9 +6,9 @@
 
 in vec3 Normal;
 in vec3 FragPos;
-in vec2 TexCoord;
+in vec3 TexCoord;
 
-uniform sampler2D atlas; //for now just a voxel texture
+uniform sampler2DArray uTextures; 
 
 out vec4 fragColor;
 void main()
@@ -24,7 +24,7 @@ void main()
 
 	//fragColor = vec4(finalColor, 1.0);
 
-	vec4 texColor = texture(atlas, TexCoord);
+	vec4 texColor = texture(uTextures, TexCoord);
 
 	if (texColor.a < 0.1)   // optional: discard transparent texels
 		discard;

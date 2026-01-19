@@ -79,9 +79,11 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
         for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
             for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
-                if (y < CHUNK_HEIGHT/2) { // /2
-                    setVoxel({x,y,z}, 1);
-                } else {
+                if (y < CHUNK_HEIGHT/2 - 5) { // /2
+                    setVoxel({x,y,z}, 2);
+                    std::cout << "y: " << y << std::endl;
+                }
+                else {
                     setVoxel({x,y,z}, 0);
                 }
             }

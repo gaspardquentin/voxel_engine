@@ -7,7 +7,7 @@
 
 struct Vertex {
   Vec3 pos, normal;
-  Vec2 uv;
+  Vec3 uv; //TODO: maybe transform it into vec2 and add a int layerIndex to the struct
 };
 
 struct MeshData {

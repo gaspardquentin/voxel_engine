@@ -16,12 +16,23 @@ public:
     Texture(std::string texture_path, bool generate_mip_maps = true);
     Texture(std::string texture_path, int tile_size, bool generate_mip_maps = true);
     Texture(const Texture& texture);
+
+    void loadTexture();
+    void unloadTexture();
+    unsigned char *getImageData();
+    int getWidth() const;
+    int getHeight() const;
+    std::string getTexturePath();
+
+
+
     ~Texture();
 };
 
 
 const std::vector<Texture> DEFAULT_TEXTURES = {
-    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/gravel_stone.png"}
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/gravel_stone.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/dirt.png"}
     //,{VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/minecraft_grass.jpg"}
 };
 

@@ -4,10 +4,13 @@
 
 enum Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
 
+enum class TextureMode { TEXTURE_ARRAY_2D, TEXTURE_ATLAS };
+
 
 struct VoxelEngineConfig {
     unsigned int width = 1280;
     unsigned int height = 720;
+    TextureMode texture_mode = TextureMode::TEXTURE_ARRAY_2D;
     std::string world_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/vertex.vert";
     std::string world_fragment_shader = VOXEL_ENGINE_SHADER_DIR "/fragment.frag";
     std::string ui_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.vert"; //TODO: maybe rename shader or path

@@ -2,6 +2,7 @@
 #include "rendering/opengl/gl_mesh.h"
 #include "rendering/opengl_texture.h"
 #include "rendering/world_mesh_builder.h"
+#include "voxel_engine/voxel_types.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,7 +10,7 @@
 
 GLWorldRenderPass::GLWorldRenderPass(const Shader& shader,
 				     const World& world)
-    : m_shader_prog(shader), m_world(world) {
+    : m_shader_prog(shader), m_world(world), m_textures(world.getVoxelTypes()) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor(77.0f/255.0f, 109.0f/255.0f, 157.0f/255.0f, 1.0f);
@@ -20,14 +21,18 @@ void GLWorldRenderPass::addChunkMesh(GLMesh mesh) {
 }
 
 void GLWorldRenderPass::loadTextures(World& world) {
-    int voxel_types_nbr = world.getVoxelTypes().size();
+    //int voxel_types_nbr = world.getVoxelTypes().size();
+    m_textures.loadTextures();
+    m_textures.bind();
+    /*
     for (int i = 1; i < voxel_types_nbr; i++) {
 	const Texture& old_texture = *(world.getVoxelType(i).getTexture());
-	auto glt = std::make_shared<OpenGLTexture>(old_texture);
+	auto glt = std::make_shared<OpenGLTextureArray>(old_texture);
 	world.setTextureForType(i, glt);
 	glt->loadTexture();
 	glt->bind(); //TODO: move this away
     }
+    */
 }
 
 void GLWorldRenderPass::initChunkMeshes(int chunk_nbr) {
@@ -51,7 +56,7 @@ void GLWorldRenderPass::render(const Camera& camera) {
     m_shader_prog.setUniformMatrix4fv("projection", glm::value_ptr(projection));
 
     // voxel texture TODO: change approach
-    m_shader_prog.setUniform1i("atlas", 0);
+    m_shader_prog.setUniform1i("uTextures", 0);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for (Chunk& c: m_world.getChunks()) {

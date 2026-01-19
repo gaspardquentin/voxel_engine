@@ -47,5 +47,6 @@ public:
 
 const std::vector<VoxelType> DEFAULT_VOXEL_TYPES = {
     { 0, "air", false, true, nullptr },
-    { 1, "dirt", true, false, std::make_shared<Texture>(DEFAULT_TEXTURES[0]) },
+    { 1, "gravel", true, false, std::make_shared<Texture>(DEFAULT_TEXTURES[0]) },
+    { 2, "dirt", true, false, std::make_shared<Texture>(DEFAULT_TEXTURES[1]) },
 };

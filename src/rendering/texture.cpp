@@ -21,6 +21,30 @@ Texture::Texture(const Texture& texture):
 
 Texture::~Texture() { delete m_impl; }
 
+void Texture::loadTexture() {
+    m_impl->loadTexture();
+}
+
+void Texture::unloadTexture() {
+    m_impl->unloadTexture();
+}
+
+unsigned char *Texture::getImageData() {
+    return m_impl->m_data;
+}
+
+int Texture::getWidth() const {
+    return m_impl->m_width;
+}
+
+int Texture::getHeight() const {
+    return m_impl->m_height;
+}
+
+std::string Texture::getTexturePath() {
+    return m_impl->m_atlas_path;
+}
+
 
 /* Texture implementation */
 Texture::Impl::Impl(std::string texture_path, int tile_size, bool generate_mip_maps): 
@@ -46,7 +70,7 @@ Texture::Impl::~Impl() {
 }
 
 void Texture::Impl::loadTexture() {
-    m_data = stbi_load(m_atlas_path.c_str(), &m_width, &m_height, &m_nr_channels, 0);
+    m_data = stbi_load(m_atlas_path.c_str(), &m_width, &m_height, &m_nr_channels, 4);
     m_loaded = true;
 }
 

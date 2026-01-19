@@ -20,45 +20,45 @@ Vec3i direction(VoxelFace vf) {
 const std::array<std::array<Vertex, 4>, 6> VOXEL_FACE_VERTICES = {
     // FRONT face (z+)
     std::array<Vertex, 4>{
-        Vertex{{0, 0, 1}, {0, 0, 1}, {0, 0}},
-        Vertex{{1, 0, 1}, {0, 0, 1}, {1, 0}},
-        Vertex{{1, 1, 1}, {0, 0, 1}, {1, 1}},
-        Vertex{{0, 1, 1}, {0, 0, 1}, {0, 1}}
+        Vertex{{0, 0, 1}, {0, 0, 1}, {0, 0, 0}},
+        Vertex{{1, 0, 1}, {0, 0, 1}, {1, 0, 0}},
+        Vertex{{1, 1, 1}, {0, 0, 1}, {1, 1, 0}},
+        Vertex{{0, 1, 1}, {0, 0, 1}, {0, 1, 0}}
     },
     // BACK face (z-)
     std::array<Vertex, 4>{
-        Vertex{{1, 0, 0}, {0, 0, -1}, {0, 0}},
-        Vertex{{0, 0, 0}, {0, 0, -1}, {1, 0}},
-        Vertex{{0, 1, 0}, {0, 0, -1}, {1, 1}},
-        Vertex{{1, 1, 0}, {0, 0, -1}, {0, 1}}
+        Vertex{{1, 0, 0}, {0, 0, -1}, {0, 0, 0}},
+        Vertex{{0, 0, 0}, {0, 0, -1}, {1, 0, 0}},
+        Vertex{{0, 1, 0}, {0, 0, -1}, {1, 1, 0}},
+        Vertex{{1, 1, 0}, {0, 0, -1}, {0, 1, 0}}
     },
     // LEFT face (x-)
     std::array<Vertex, 4>{
-        Vertex{{0, 0, 0}, {-1, 0, 0}, {0, 0}},
-        Vertex{{0, 0, 1}, {-1, 0, 0}, {1, 0}},
-        Vertex{{0, 1, 1}, {-1, 0, 0}, {1, 1}},
-        Vertex{{0, 1, 0}, {-1, 0, 0}, {0, 1}}
+        Vertex{{0, 0, 0}, {-1, 0, 0}, {0, 0, 0}},
+        Vertex{{0, 0, 1}, {-1, 0, 0}, {1, 0, 0}},
+        Vertex{{0, 1, 1}, {-1, 0, 0}, {1, 1, 0}},
+        Vertex{{0, 1, 0}, {-1, 0, 0}, {0, 1, 0}}
     },
     // RIGHT face (x+)
     std::array<Vertex, 4>{
-        Vertex{{1, 0, 1}, {1, 0, 0}, {0, 0}},
-        Vertex{{1, 0, 0}, {1, 0, 0}, {1, 0}},
-        Vertex{{1, 1, 0}, {1, 0, 0}, {1, 1}},
-        Vertex{{1, 1, 1}, {1, 0, 0}, {0, 1}}
+        Vertex{{1, 0, 1}, {1, 0, 0}, {0, 0, 0}},
+        Vertex{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}},
+        Vertex{{1, 1, 0}, {1, 0, 0}, {1, 1, 0}},
+        Vertex{{1, 1, 1}, {1, 0, 0}, {0, 1, 0}}
     },
     // TOP face (y+)
     std::array<Vertex, 4>{
-        Vertex{{0, 1, 1}, {0, 1, 0}, {0, 0}},
-        Vertex{{1, 1, 1}, {0, 1, 0}, {1, 0}},
-        Vertex{{1, 1, 0}, {0, 1, 0}, {1, 1}},
-        Vertex{{0, 1, 0}, {0, 1, 0}, {0, 1}}
+        Vertex{{0, 1, 1}, {0, 1, 0}, {0, 0, 0}},
+        Vertex{{1, 1, 1}, {0, 1, 0}, {1, 0, 0}},
+        Vertex{{1, 1, 0}, {0, 1, 0}, {1, 1, 0}},
+        Vertex{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}
     },
     // BOTTOM face (y-)
     std::array<Vertex, 4>{
-        Vertex{{0, 0, 0}, {0, -1, 0}, {0, 0}},
-        Vertex{{1, 0, 0}, {0, -1, 0}, {1, 0}},
-        Vertex{{1, 0, 1}, {0, -1, 0}, {1, 1}},
-        Vertex{{0, 0, 1}, {0, -1, 0}, {0, 1}}
+        Vertex{{0, 0, 0}, {0, -1, 0}, {0, 0, 0}},
+        Vertex{{1, 0, 0}, {0, -1, 0}, {1, 0, 0}},
+        Vertex{{1, 0, 1}, {0, -1, 0}, {1, 1, 0}},
+        Vertex{{0, 0, 1}, {0, -1, 0}, {0, 1, 0}}
     }
 };
 
@@ -71,7 +71,7 @@ void WorldMeshBuilder::emitFace(MeshData& mesh_data, const Chunk& chunk, ChunkCo
         mesh_data.vertices.push_back({
             Vec3f{voxel_pos} + chunk.getWorldPos() + v.pos,
             v.normal,
-            v.uv
+            {v.uv.x, v.uv.y, v.uv.z + voxel.getId()}
          });
 
     }
