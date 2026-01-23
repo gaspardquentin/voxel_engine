@@ -77,6 +77,14 @@ endif()
 # GLM for math
 find_package(glm REQUIRED)
 
+# ImGui
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui
+    GIT_TAG docking
+)
+FetchContent_MakeAvailable(imgui)
+
 # =============================================================================
 # LIBRARY SETUP
 # =============================================================================
@@ -135,7 +143,31 @@ target_link_libraries(VoxelEngine
         GLEW::GLEW
         ${OPENGL_GL}
         glm::glm
+    PRIVATE
+        imgui
 )
+
+# Setup ImGui Library
+# Core ImGui (No backends, no GLFW dependency)
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+
+# ImGui Backends (Depends on GLFW and OpenGL)
+if(TARGET glfw)
+    add_library(imgui_backends STATIC
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    )
+    target_include_directories(imgui_backends PUBLIC ${imgui_SOURCE_DIR}/backends)
+    target_compile_definitions(imgui_backends PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
+    target_link_libraries(imgui_backends PUBLIC imgui glfw ${OPENGL_GL} GLEW::GLEW)
+endif()
 
 # Embed shaders as strings (optional approach)
 # You could also load them at runtime
@@ -158,6 +190,7 @@ if(VOXEL_ENGINE_BUILD_EXAMPLES)
     target_link_libraries(simple_demo
         VoxelEngine::VoxelEngine
         glfw
+        imgui_backends
         #GLEW::GLEW
         #OpenGL::GL
     )
@@ -215,7 +248,6 @@ endif()
 
 # Install targets
 install(TARGETS VoxelEngine
-    EXPORT VoxelEngineTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -233,11 +265,11 @@ install(DIRECTORY shaders/
 )
 
 # Export targets
-install(EXPORT VoxelEngineTargets
-    FILE VoxelEngineTargets.cmake
-    NAMESPACE VoxelEngine::
-    DESTINATION lib/cmake/VoxelEngine
-)
+# install(EXPORT VoxelEngineTargets
+#     FILE VoxelEngineTargets.cmake
+#     NAMESPACE VoxelEngine::
+#     DESTINATION lib/cmake/VoxelEngine
+# )
 
 # Create config file
 include(CMakePackageConfigHelpers)

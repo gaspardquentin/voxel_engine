@@ -2,11 +2,14 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
+#include "imgui.h"
 #include "voxel_engine/voxel_engine.h"
 
-const unsigned int SCREEN_WIDTH = 1920;
-const unsigned int SCREEN_HEIGHT = 1080;
+const unsigned int SCREEN_WIDTH = 3840; // or 1920 for FHD screen
+const unsigned int SCREEN_HEIGHT = 2160; // or 1080
 
 float lastX = SCREEN_WIDTH / 2.0f;
 float lastY = SCREEN_HEIGHT / 2.0f;
@@ -106,6 +109,7 @@ int main() {
 
     // tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSwapInterval(0); // Disable V-Sync
 
 
     glewExperimental = GL_TRUE;
@@ -117,6 +121,22 @@ int main() {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
+    /* ====== Imgui ui setup ======= */
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    // Automatic scaling for high-DPI/4K displays
+    if (SCREEN_WIDTH > 2000) {
+        float scale = 2.0f;
+        ImGui::GetStyle().ScaleAllSizes(scale);
+        io.FontGlobalScale = scale;
+    }
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char* glsl_version = "#version 410";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+
     /* ====== engine demo ======= */
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -126,13 +146,35 @@ int main() {
     };
     VoxelEngine engine{engine_conf}; //TODO: maybe separate engine from renderer
     gVoxelEngine = &engine;
+
+    /* ===== fps calculation ====== */
+    double lastTime = glfwGetTime();
+    int frameCount = 0;
+    float currentFps = 0.0f;
+    float treshold = 1.0f;
     while (!glfwWindowShouldClose(window)) {
+        /* ====== Imgui ui ======= */
+        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui::NewFrame();
+
         float currentFrame = static_cast<float>(glfwGetTime());
+        float elapsedTime = currentFrame - lastTime;
+        if (elapsedTime > treshold) {
+            lastTime = currentFrame;
+            currentFps = frameCount / elapsedTime;
+            frameCount = 0;
+        }
+        frameCount++;
+
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         processInput(window, engine, deltaTime);
 
+        engine.drawDebugUI(currentFps);
         engine.render(); //TODO: change this
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

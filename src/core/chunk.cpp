@@ -79,9 +79,11 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
         for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
             for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
-                if (y < CHUNK_HEIGHT/2 - 5) { // /2
+                if (y < CHUNK_HEIGHT/2 - 2) { // /2
+                    setVoxel({x,y,z}, 1);
+                }
+                else if (y < CHUNK_HEIGHT/2) {
                     setVoxel({x,y,z}, 2);
-                    std::cout << "y: " << y << std::endl;
                 }
                 else {
                     setVoxel({x,y,z}, 0);
@@ -90,6 +92,7 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
         }
     }
 
+    /*
     ChunkCoord pos{CHUNK_WIDTH-1, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-1};
     setVoxel(pos, 0);
     pos = ChunkCoord{CHUNK_WIDTH-3, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-3};
@@ -98,4 +101,5 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2, CHUNK_DEPTH-1}, 1);
     setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+1, CHUNK_DEPTH-1}, 1);
     setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+2, CHUNK_DEPTH-1}, 1);
+    */
 }

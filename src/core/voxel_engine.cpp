@@ -6,6 +6,8 @@
 #include "rendering/shader_manager.h"
 #include "rendering/passes/glui_render_pass.h"
 
+#include <imgui.h>
+
 class VoxelEngine::Impl {
 public:
     World m_world;
@@ -84,4 +86,13 @@ bool VoxelEngine::playerSetVoxel(uint8_t max_reach, VoxelID new_voxel) {
         }
     }
     return false;
+}
+
+void VoxelEngine::drawDebugUI(float fps) const {
+    if (ImGui::Begin("Engine Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        Vec3f player_pos = m_impl->m_camera.getPos();
+        ImGui::Text("FPS: %d", (int) fps);
+        ImGui::Text("Position: (%.2f, %.2f, %.2f)", player_pos.x, player_pos.y, player_pos.z);
+    }
+    ImGui::End();
 }
