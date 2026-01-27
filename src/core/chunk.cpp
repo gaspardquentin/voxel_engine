@@ -76,30 +76,61 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
 {
     // TODO: replace with better chunk generation
 
+    // Basic terrain generation
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
-        for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
-            for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
-                if (y < CHUNK_HEIGHT/2 - 2) { // /2
-                    setVoxel({x,y,z}, 1);
-                }
-                else if (y < CHUNK_HEIGHT/2) {
-                    setVoxel({x,y,z}, 2);
-                }
-                else {
-                    setVoxel({x,y,z}, 0);
+        for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
+            int ground_height = CHUNK_HEIGHT / 2;
+            
+            for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
+                if (y < ground_height - 2) {
+                    setVoxel({x,y,z}, 3); // Stone
+                } else if (y < ground_height) {
+                    setVoxel({x,y,z}, 2); // Dirt
+                } else if (y == ground_height) {
+                    setVoxel({x,y,z}, 5); // Grass
+                } else {
+                    setVoxel({x,y,z}, 0); // Air
                 }
             }
         }
     }
 
-    /*
-    ChunkCoord pos{CHUNK_WIDTH-1, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-1};
-    setVoxel(pos, 0);
-    pos = ChunkCoord{CHUNK_WIDTH-3, CHUNK_HEIGHT/2-1, CHUNK_DEPTH-3};
-    setVoxel(pos, 0);
+    // Add a tree in the center
+    int tree_x = CHUNK_WIDTH / 2;
+    int tree_z = CHUNK_DEPTH / 2;
+    int ground = CHUNK_HEIGHT / 2;
+    
+    // Trunk
+    for (int i = 1; i <= 4; i++) {
+        setVoxel({(unsigned int)tree_x, (unsigned int)(ground + i), (unsigned int)tree_z}, 6); // Wood
+    }
+    
+    // Leaves
+    for (int ly = ground + 3; ly <= ground + 5; ly++) {
+        for (int lx = tree_x - 2; lx <= tree_x + 2; lx++) {
+            for (int lz = tree_z - 2; lz <= tree_z + 2; lz++) {
+                 // Skip corners to make it rounder
+                 if (std::abs(lx - tree_x) == 2 && std::abs(lz - tree_z) == 2) continue;
 
-    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2, CHUNK_DEPTH-1}, 1);
-    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+1, CHUNK_DEPTH-1}, 1);
-    setVoxel({CHUNK_WIDTH-5, CHUNK_HEIGHT/2+2, CHUNK_DEPTH-1}, 1);
-    */
+                 if (lx == tree_x && lz == tree_z && ly < ground + 5) continue; // Don't overwrite trunk (except top)
+                 
+                 ChunkCoord pos = {(unsigned int)lx, (unsigned int)ly, (unsigned int)lz};
+                 if (positionInChunk(pos)) {
+                     setVoxel(pos, 7); // Leaves
+                 }
+            }
+        }
+    }
+
+    // Water pool
+    for (unsigned int x = 1; x < 4; x++) {
+        for (unsigned int z = 1; z < 4; z++) {
+            setVoxel({x, (unsigned int)ground, z}, 8); // Water
+            setVoxel({x, (unsigned int)ground - 1, z}, 4); // Sand
+        }
+    }
+    
+    // Some glass/brick structure
+    setVoxel({CHUNK_WIDTH - 2, (unsigned int)ground + 1, CHUNK_DEPTH - 2}, 9); // Brick
+    setVoxel({CHUNK_WIDTH - 2, (unsigned int)ground + 2, CHUNK_DEPTH - 2}, 10); // Glass
 }

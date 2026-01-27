@@ -1,9 +1,10 @@
 #pragma once
 
 #include "rendering/mesh_data.h"
+#include "voxel_engine/mesh.h"
 #include <GL/glew.h>
 
-class GLMesh {
+class GLMesh : public voxeng::Mesh {
   GLuint vao = 0, vbo = 0, ebo = 0;
   GLsizei index_count = 0;
 
@@ -17,13 +18,19 @@ public:
     o.vao = o.vbo = o.ebo = 0; o.index_count = 0;
     return *this;
   }
-  ~GLMesh() {
+  ~GLMesh() override {
     destroy();
   }
 
   inline void test() { std::cout << vao << std::endl; } //TODO: maybe remove this
   void upload(const MeshData& mesh_data);
-  void draw(GLenum mode = GL_TRIANGLES) const;
+
+  // Implementation of the generic interface
+  void draw() const override;
+
+  // OpenGL specific draw with mode control
+  void draw(GLenum mode) const;
+
   void destroy();
 };
 

@@ -32,8 +32,15 @@ public:
 
 const std::vector<Texture> DEFAULT_TEXTURES = {
     {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/gravel_stone.png"},
-    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/dirt.png"}
-    //,{VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/minecraft_grass.jpg"}
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/dirt.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/stone.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/sand.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/grass_top.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/trunk_side.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/leaves.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/water.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/brick_red.png"},
+    {VOXEL_ENGINE_ASSETS_DIR "/textures/blocks/glass.png"}
 };
 
 }

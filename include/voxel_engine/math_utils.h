@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <iostream>
 
 /* =============== Helper Functions ===================== */
@@ -35,6 +38,11 @@ struct Vec2T {
         y -= other.y;
         return *this;
     }
+
+    bool operator==(const Vec2T& other) const {
+        return x == other.x && y == other.y;
+    }
+
     Vec2T operator*(float scalar) const { return {x * scalar, y * scalar}; }
     Vec2T operator/(float scalar) const { return {x / scalar, y / scalar}; }
 
@@ -51,6 +59,12 @@ struct Vec2T {
 using Vec2 = Vec2T<float>;
 using Vec2f = Vec2T<float>;
 using Vec2i = Vec2T<int>;
+//Note: doing this limits the amount of chunks of the engine, but this might be 
+//enough and makes the hashing function more efficient
+//This might change in the future.
+using ChunkID = Vec2T<int32_t>;
+
+
 
 template <typename T>
 struct Vec3T {
@@ -127,3 +141,30 @@ using Vec3 = Vec3T<float>;
 using Vec3f = Vec3T<float>;
 using Vec3i = Vec3T<int>;
 using Vec3u = Vec3T<unsigned int>;
+
+// Note: Needed for obj file parsing
+// This should be interpreted as {v_idx, vt_idx, vn_idx}
+using ObjVertexIndex = Vec3T<int>;
+
+
+// Hash for the chunk id type (needed to store the chunks in the unordered map 
+// accessed by their id)
+// And Hash needed for the de-duplication algorithm in the obj file parsing
+namespace std {
+    template<>
+    struct hash<ChunkID> {
+        size_t operator()(const ChunkID& chunk_id) const noexcept {
+            return (static_cast<uint64_t>(static_cast<uint32_t>(chunk_id.x)) << 32) | static_cast<uint32_t>(chunk_id.y);
+        }
+    };
+
+    template<>
+    struct hash<ObjVertexIndex> {
+        size_t operator()(const ObjVertexIndex& k) const {
+            return ((std::hash<int>()(k.x) ^
+                    (std::hash<int>()(k.y) << 1)) >> 1) ^
+                    (std::hash<int>()(k.z) << 1);
+        }
+    };
+}
+

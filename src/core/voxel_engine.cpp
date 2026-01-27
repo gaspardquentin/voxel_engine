@@ -5,6 +5,7 @@
 #include "rendering/render_pipeline.h"
 #include "rendering/shader_manager.h"
 #include "rendering/passes/glui_render_pass.h"
+#include "rendering/passes/gl_entity_render_pass.h"
 
 #include <imgui.h>
 
@@ -20,6 +21,8 @@ public:
     {
         m_shader_manager.load("world", config.world_vertex_shader, config.world_fragment_shader);
         m_shader_manager.load("ui", config.ui_vertex_shader, config.ui_fragment_shader);
+        // Load the simple shader for entities
+        m_shader_manager.load("entity", VOXEL_ENGINE_SHADER_DIR "/simple_mvp.vert", VOXEL_ENGINE_SHADER_DIR "/simple.frag");
 
         m_render_pipeline.addPass<GLWorldRenderPass>(
             *(m_shader_manager.get("world")),
@@ -27,10 +30,13 @@ public:
         );
         m_render_pipeline.addPass<GLUIRenderPass>(
             *(m_shader_manager.get("ui")));
+        
+        // Use the 'entity' shader
+        m_render_pipeline.addPass<GLEntityRenderPass>(*(m_shader_manager.get("entity")));
 
         auto *world_pass = m_render_pipeline.getPass<GLWorldRenderPass>();
         if (world_pass) {
-            world_pass->loadTextures(m_world);
+            world_pass->loadTextures();
             world_pass->initChunkMeshes(m_world.getChunks().size());
         }
     }
@@ -89,6 +95,7 @@ bool VoxelEngine::playerSetVoxel(uint8_t max_reach, VoxelID new_voxel) {
 }
 
 void VoxelEngine::drawDebugUI(float fps) const {
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
     if (ImGui::Begin("Engine Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         Vec3f player_pos = m_impl->m_camera.getPos();
         ImGui::Text("FPS: %d", (int) fps);

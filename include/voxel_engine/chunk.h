@@ -31,7 +31,7 @@ public:
     const Vec3f& getWorldPos() const { return m_world_pos; }
     inline void setRendererId(size_t id) { m_renderer_id = id; }
     inline size_t getRendererId() const { return m_renderer_id; }
-    inline bool update() {
+    inline bool update() const {
         bool ret = m_has_changed;
         m_has_changed = false;
         return ret;
@@ -40,7 +40,7 @@ public:
 
 private:
     // for renderer to be able to change vao/vbo only for updated chunks
-    bool m_has_changed = true;
+    mutable bool m_has_changed = true;
     size_t m_renderer_id = 0;
     Vec3f m_world_pos;
 

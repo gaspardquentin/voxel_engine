@@ -1,5 +1,6 @@
 #pragma once
 
+#include "voxel_engine/voxel_types.h"
 #include "world.h"
 
 enum Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
@@ -28,12 +29,14 @@ public:
     void processMovementCamera(float xoffset, float yoffset, bool constrain_pitch = true);
     void processZoomCamera(float yoffset);
 
+    //TODO: maybe remove the player from the name of those methods
     bool playerPlaceVoxel(uint8_t max_reach, VoxelID voxel);
     bool playerRemoveVoxel(uint8_t max_reach);
     bool playerSetVoxel(uint8_t max_reach, VoxelID new_voxel); //TODO: maybe move this into voxelengine constructor arg
 
     // UI
     void drawDebugUI(float fps) const;
+    //TODO: maybe add render distance setter
 
 
 private:

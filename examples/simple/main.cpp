@@ -17,8 +17,14 @@ float lastY = SCREEN_HEIGHT / 2.0f;
 VoxelEngine* gVoxelEngine = nullptr; //global pointer needed for callbacks
 
 bool firstMouse = true; //TODO: maybe find better approach
+bool gamePaused = false;
+
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+    if (gamePaused) {
+        return;
+    }
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -47,22 +53,29 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     }
 }
 
+//TODO: move those
+int voxelId = 1;
+std::string voxelName = "gravel";
+int maxVoxel = 10; //TODO: maybe get this from a getter
+int maxReach = 3;
+
+
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (gVoxelEngine == nullptr) {
         return;
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        gVoxelEngine->playerRemoveVoxel(3);
+        gVoxelEngine->playerRemoveVoxel(maxReach);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-        gVoxelEngine->playerPlaceVoxel(3, 1);
+        gVoxelEngine->playerPlaceVoxel(maxReach, voxelId);
     }
 }
 
 
 void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+    static bool eWasDown = false;
+    static bool escapeWasDown = false;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         engine.processMovementPlayer(FORWARD, deltaTime);
@@ -76,6 +89,30 @@ void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
         engine.processMovementPlayer(UP, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         engine.processMovementPlayer(DOWN, deltaTime);
+
+    // Escape key event (pause mode)
+    bool escapeIsDown = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+    if (escapeIsDown && !escapeWasDown) {
+        if (gamePaused) {
+            gamePaused = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            gamePaused = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+    escapeWasDown = escapeIsDown;
+
+    // E key even (switch bloc type)
+    bool eIsDown = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
+    if (eIsDown && !eWasDown) {
+        voxelId++;
+        if (voxelId > maxVoxel) {
+            voxelId = 1;
+        }
+        voxelName = engine.getWorld().getVoxelType(voxelId).getName();
+    }
+    eWasDown = eIsDown;
 }
 
 
@@ -157,6 +194,14 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui::NewFrame();
+
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Appearing, ImVec2(1.0f, 0.0f));
+        ImGui::Begin("Game informations", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::Button("Quit Game")) {
+            glfwSetWindowShouldClose(window, true);
+        }
+        ImGui::Text("Selected voxel: %s ; press E to change", voxelName.c_str());
+        ImGui::End();
 
         float currentFrame = static_cast<float>(glfwGetTime());
         float elapsedTime = currentFrame - lastTime;

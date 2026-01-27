@@ -3,15 +3,18 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "callbacks.h"
 #include "texture.h"
 #include "voxel_types.h"
 #include "chunk.h"
+#include "math_utils.h"
 
 
 // render distance in chunk nbrs
-#define DEFAULT_RENDER_DISTANCE 8
+// TODO: maybe move this to config or even game
+#define DEFAULT_RENDER_DISTANCE 16
 
 class World {
 public:
@@ -29,7 +32,7 @@ public:
     VoxelID setVoxel(WorldCoord pos, VoxelID new_voxel);
     const VoxelType& getVoxel(WorldCoord pos) const;
 
-    std::vector<Chunk>& getChunks() const;
+    const std::unordered_map<ChunkID, Chunk>& getChunks() const;
 
     void setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture);
     World(uint8_t render_distance);

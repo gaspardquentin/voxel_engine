@@ -3,10 +3,13 @@
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <queue>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 class World::Impl {
 public:
@@ -14,7 +17,8 @@ public:
     //ChunkGeneratorCallback m_chunk_generator;
     //VoxelChangeCallback m_voxel_change_fun;
     std::vector<VoxelType> m_voxel_types;
-    std::vector<Chunk> m_chunks;
+    //std::vector<Chunk> m_chunks; TODO: remove this
+    std::unordered_map<ChunkID, Chunk> m_chunks;
     uint8_t m_render_distance;
 
     Impl(uint8_t render_distance):
@@ -33,40 +37,75 @@ public:
     }
 
 
+
+    // Retrieve the actual position of the chunk in the world map by it's relative position 
+    // to the center chunk. TODO: make this doc more clear
+    Vec3f _getChunkPosFromId(ChunkID chunk_id) {
+        return {
+            (float) chunk_id.x * CHUNK_WIDTH,
+            0.0f,
+            (float) chunk_id.y * CHUNK_DEPTH
+        };
+    }
+
+
+
     /**
      * Generates the world's chunks.
      * @param nb_to_generate the number of chunks to generate
      */
     void _generateChunksBFS(int nb_to_generate) {
-        std::queue<Vec3f> bfs_queue;
-        Vec3f chunk_pos = {0.0f, 0.0f, 0.0f};
-        bfs_queue.push(chunk_pos);
+        std::queue<ChunkID> bfs_queue;
+
+        // Note: see this as a vector of position relative to the center chunk.
+        // since chunks occupies all the y-axis, this vector should be interpreted
+        // as {x, z} components rather than the usual {x, y} TODO: maybe make this note more clear
+        ChunkID chunk_id = {0, 0};
+
+        bfs_queue.push(chunk_id);
+        std::unordered_set<ChunkID> bfs_visited;
+        bfs_visited.insert(chunk_id);
+
         int nb_generated = 0;
-        std::vector<Vec3f> bfs_visited;
         while (!bfs_queue.empty() && nb_generated < nb_to_generate) {
-            chunk_pos = bfs_queue.front();
+            chunk_id = bfs_queue.front();
             bfs_queue.pop();
-            std::cout << chunk_pos << std::endl;
-            m_chunks.push_back({m_voxel_types, chunk_pos});
-            m_chunks.back().setRendererId(nb_generated);
+            auto chunk_pos = _getChunkPosFromId(chunk_id);
+            m_chunks.insert({chunk_id, {m_voxel_types, chunk_pos}});
+            //m_chunks.push_back({m_voxel_types, chunk_pos});
+            m_chunks.at(chunk_id).setRendererId(nb_generated);
+            //m_chunks[chunk_id].setRendererId(nb_generated);
+            //m_chunks.back().setRendererId(nb_generated);
             nb_generated++;
+
+            const std::vector<Vec2i> neighboors = {
+                chunk_id + Vec2i{1, 0}, // right
+                chunk_id + Vec2i{-1, 0}, // left
+                chunk_id + Vec2i{0, -1}, // back
+                chunk_id + Vec2i{0, 1} // front
+            };
+
+            /*
             const std::vector<Vec3f> neighboors = {
                 chunk_pos + Vec3f{(float)Chunk::WIDTH, 0.0f, 0.0f}, // right
                 chunk_pos + Vec3f{-((float)Chunk::WIDTH), 0.0f, 0.0f}, // left
                 chunk_pos + Vec3f{0.0f, 0.0f, -((float)Chunk::DEPTH)}, // back
                 chunk_pos + Vec3f{0.0f, 0.0f, (float)Chunk::DEPTH} // front
             };
+            */
 
             for (auto neighboor: neighboors) {
-                if (std::find(bfs_visited.begin(), bfs_visited.end(), neighboor) == bfs_visited.end()) {
+                if (bfs_visited.find(neighboor) == bfs_visited.end()) {
+                //if (std::find(bfs_visited.begin(), bfs_visited.end(), neighboor) == bfs_visited.end()) {
                     bfs_queue.push(neighboor);
-                    bfs_visited.push_back(neighboor);
+                    //bfs_visited.push_back(neighboor);
+                    bfs_visited.insert(neighboor);
                 }
             }
         }
     }
 
-    size_t getChunkId(WorldCoord pos) const;
+    static ChunkID getChunkId(WorldCoord pos);
 };
 
 World::World(): m_impl(new Impl(DEFAULT_RENDER_DISTANCE)) {}
@@ -111,54 +150,36 @@ uint8_t World::getRenderDistance() const {
 }
 
 VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
-    size_t chunk_id = m_impl->getChunkId(pos);
-    ChunkCoord chunk_pos = m_impl->m_chunks[chunk_id].getChunkPosFromWorld(pos);
-    return m_impl->m_chunks[chunk_id].setVoxel(chunk_pos, new_voxel);
-}
-
-
-size_t World::Impl::getChunkId(WorldCoord pos) const {
-    size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
-
-    // estimation (reduces computation time by not checking every chunk)
-    size_t chunk_id = (size_t) (index / Chunk::SIZE);
-    if (chunk_id > m_chunks.size()) {
+    ChunkID chunk_id = Impl::getChunkId(pos);
+    auto pair = m_impl->m_chunks.find(chunk_id);
+    if (pair == m_impl->m_chunks.end()) {
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
+        //TODO: maybe return something else
         return 0;
     }
+    Chunk& chunk = pair->second;
+    ChunkCoord chunk_pos = chunk.getChunkPosFromWorld(pos);
+    return chunk.setVoxel(chunk_pos, new_voxel);
+}
 
-    if (m_chunks[chunk_id].worldPositionInChunk(pos)) {
-        return chunk_id;
-    }
-
-    // look for chunks near the estimated one
-    size_t start = (long) chunk_id - 5 < 0 ? chunk_id : chunk_id - 5;
-    for (size_t i = start; i < start + 10; ++i) {
-        if (i >= m_chunks.size()) {
-            break;
-        }
-        if (m_chunks[i].worldPositionInChunk(pos)) {
-            return i;
-        }
-    }
-
-    // if still not found yet, do full iteration
-    for (size_t i = 0; i < m_chunks.size(); i++) {
-        if (m_chunks[i].worldPositionInChunk(pos)) {
-            return i;
-        }
-    }
-
-
-    std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
-    return 0;
-
+ChunkID World::Impl::getChunkId(WorldCoord pos) {
+    return {
+        static_cast<int32_t>(std::floor(pos.x / static_cast<float>(Chunk::WIDTH))),
+        static_cast<int32_t>(std::floor(pos.z / static_cast<float>(Chunk::DEPTH)))
+    };
 }
 
 const VoxelType& World::getVoxel(WorldCoord pos) const {
-    size_t chunk_id = m_impl->getChunkId(pos);
-    ChunkCoord chunk_pos = m_impl->m_chunks[chunk_id].getChunkPosFromWorld(pos);
-    return m_impl->m_chunks[chunk_id].getVoxel(chunk_pos);
+    ChunkID chunk_id = Impl::getChunkId(pos);
+    auto pair = m_impl->m_chunks.find(chunk_id);
+    if (pair == m_impl->m_chunks.end()) {
+        std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
+        //TODO: maybe return something else
+        return m_impl->m_voxel_types[0];
+    }
+    Chunk& chunk = pair->second;
+    ChunkCoord chunk_pos = chunk.getChunkPosFromWorld(pos);
+    return chunk.getVoxel(chunk_pos);
 }
 
 
@@ -169,7 +190,7 @@ std::optional<Vec3f> World::getVoxelTopLeftPos(Vec3f pos_inside) const {
 */
 
 
-std::vector<Chunk>& World::getChunks() const {
+const std::unordered_map<ChunkID, Chunk>& World::getChunks() const {
     return m_impl->m_chunks;
 }
 

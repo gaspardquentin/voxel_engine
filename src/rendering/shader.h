@@ -82,6 +82,14 @@ public:
     glUniform3fv(location, 1, vector);
   }
 
+  void setUniformVec4(const std::string& name, const float *vector) const {
+    GLint location = glGetUniformLocation(m_program, name.c_str());
+    if (location == -1) {
+        std::cerr << "WARNING::SHADER::UNIFORM '" << name << "' NOT FOUND" << std::endl;
+    }
+    glUniform4fv(location, 1, vector);
+  }
+
 
   void setUniform1i(const std::string& name, int val) const {
     GLint location = glGetUniformLocation(m_program, name.c_str());

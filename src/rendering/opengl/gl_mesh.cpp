@@ -41,6 +41,10 @@ void GLMesh::upload(const MeshData& mesh_data) {
 
 }
 
+void GLMesh::draw() const {
+    draw(GL_TRIANGLES);
+}
+
 void GLMesh::draw(GLenum mode) const {
     glBindVertexArray(vao);
     glDrawElements(mode, index_count, GL_UNSIGNED_INT, 0);
