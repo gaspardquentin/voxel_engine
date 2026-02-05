@@ -1,7 +1,9 @@
 #include "voxel_engine/world.h"
+#include "rendering/camera.h"
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
+#include "voxel_engine/save_format.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -20,12 +22,14 @@ public:
     //std::vector<Chunk> m_chunks; TODO: remove this
     std::unordered_map<ChunkID, Chunk> m_chunks;
     uint8_t m_render_distance;
+    uint64_t m_seed;
 
-    Impl(uint8_t render_distance):
-        m_render_distance(render_distance),
+    Impl(uint8_t render_distance, uint64_t seed):
         //m_chunk_generator(DEFAULT_CHUNK_GENERATOR),
         //m_voxel_change_fun(DEFAULT_VOXEL_CHANGE_FUNC),
-        m_voxel_types(DEFAULT_VOXEL_TYPES) {
+        m_voxel_types(DEFAULT_VOXEL_TYPES),
+        m_render_distance(render_distance),
+        m_seed(seed) {
         generateChunks();
     }
 
@@ -108,8 +112,8 @@ public:
     static ChunkID getChunkId(WorldCoord pos);
 };
 
-World::World(): m_impl(new Impl(DEFAULT_RENDER_DISTANCE)) {}
-World::World(uint8_t render_distance): m_impl(new Impl(render_distance)) {}
+World::World(uint64_t seed): m_impl(new Impl(DEFAULT_RENDER_DISTANCE, seed)) {}
+World::World(uint8_t render_distance, uint64_t seed): m_impl(new Impl(render_distance, seed)) {}
 
 World::~World() { delete m_impl; }
 
@@ -205,5 +209,36 @@ void World::setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture) {
         return;
     }
     m_impl->m_voxel_types[vid].setTexture(texture);
+}
+
+
+
+void World::setSeed(uint64_t seed) {
+    m_impl->m_seed = seed;
+}
+
+uint64_t World::getSeed() const {
+    return m_impl->m_seed;
+}
+
+World World::fromData(const WorldSaveData& data) {
+
+    return World(data.world_seed);
+}
+
+WorldSaveData World::toData() const {
+    WorldSaveData save;
+    save.world_seed = m_impl->m_seed;
+    save.chunks_nbr = m_impl->m_chunks.size();
+    for (const auto& [_, chunk]: m_impl->m_chunks) {
+        ChunkSaveData chunk_data;
+        chunk_data.chunk_pos = chunk.getWorldPos();
+        const auto& voxels = chunk.getRawData();
+        for (size_t i = 0; i < chunk_data.voxels.size(); i++) {
+            chunk_data.voxels[i].type = voxels[i];
+        }
+        save.chunks.push_back(chunk_data);
+    }
+    return save;
 }
 

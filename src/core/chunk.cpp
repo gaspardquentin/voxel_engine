@@ -66,6 +66,9 @@ const VoxelType& Chunk::getVoxelType(VoxelID vid) const {
     return m_voxel_types[vid];
 }
 
+const std::array<VoxelID, CHUNK_SIZE>& Chunk::getRawData() const {
+    return m_data;
+}
 
 
 Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position): 

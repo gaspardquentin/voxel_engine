@@ -10,6 +10,7 @@
 #include "voxel_types.h"
 #include "chunk.h"
 #include "math_utils.h"
+#include "save_format.h"
 
 
 // render distance in chunk nbrs
@@ -35,13 +36,21 @@ public:
     const std::unordered_map<ChunkID, Chunk>& getChunks() const;
 
     void setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture);
-    World(uint8_t render_distance);
-    World();
+
+    // Serialization / Deserialization
+    static World fromData(const WorldSaveData& data);
+    WorldSaveData toData() const;
+
+    World(uint8_t render_distance, uint64_t seed);
+    World(uint64_t seed);
     ~World();
 
     void update();
-    void setRenderDistance(uint8_t render_distance);
+    void setRenderDistance(uint8_t render_distance); //TODO: I don't think it belongs here,
+    // I guess the engine or camera should be the one asking for generation or something like that
     uint8_t getRenderDistance() const;
+    void setSeed(uint64_t seed);
+    uint64_t getSeed() const;
 
 private:
     class Impl;

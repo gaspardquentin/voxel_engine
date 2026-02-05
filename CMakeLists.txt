@@ -77,6 +77,9 @@ endif()
 # GLM for math
 find_package(glm REQUIRED)
 
+# ZLIB for compression
+find_package(ZLIB REQUIRED)
+
 # ImGui
 FetchContent_Declare(
     imgui
@@ -101,6 +104,9 @@ set(VOXEL_ENGINE_PUBLIC_HEADERS
     include/voxel_engine/math_utils.h
     include/voxel_engine/texture.h
     include/voxel_engine/chunk.h
+    include/voxel_engine/mesh.h
+    include/voxel_engine/entity.h
+    include/voxel_engine/resource_manager.h
 )
 
 # Internal headers
@@ -143,6 +149,7 @@ target_link_libraries(VoxelEngine
         GLEW::GLEW
         ${OPENGL_GL}
         glm::glm
+        ZLIB::ZLIB
     PRIVATE
         imgui
 )
@@ -221,6 +228,7 @@ if(VOXEL_ENGINE_BUILD_TESTS)
     add_executable(voxel_tests
         tests/test_world.cpp
         tests/test_chunks.cpp
+        tests/test_world_lookup.cpp
         #tests/test_math.cpp
     )
 

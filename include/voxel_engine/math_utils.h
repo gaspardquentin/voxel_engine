@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <random>
 
 /* =============== Helper Functions ===================== */
 namespace voxeng {
@@ -14,6 +15,11 @@ namespace voxeng {
         }
         inline double deg_to_rad(double deg) {
             return deg * M_PI / 180;
+        }
+        inline uint64_t generate_seed() {
+            std::random_device rd;
+            std::mt19937_64 gen(rd());
+            return gen();
         }
     }
 }

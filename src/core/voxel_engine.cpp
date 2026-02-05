@@ -11,7 +11,7 @@
 
 class VoxelEngine::Impl {
 public:
-    World m_world;
+    World m_world{generate_seed()};
     Camera m_camera;
     ShaderManager m_shader_manager;
     RenderPipeline m_render_pipeline;
@@ -30,8 +30,7 @@ public:
         );
         m_render_pipeline.addPass<GLUIRenderPass>(
             *(m_shader_manager.get("ui")));
-        
-        // Use the 'entity' shader
+
         m_render_pipeline.addPass<GLEntityRenderPass>(*(m_shader_manager.get("entity")));
 
         auto *world_pass = m_render_pipeline.getPass<GLWorldRenderPass>();

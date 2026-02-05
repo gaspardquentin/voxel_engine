@@ -10,7 +10,7 @@
 //TODO: better config approach (maybe chunk size in world attribute)
 #define CHUNK_WIDTH 16
 #define CHUNK_HEIGHT 16
-#define CHUNK_DEPTH 16
+#define CHUNK_DEPTH 16 //TODO: are we really using it ?
 #define CHUNK_SIZE (CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH)
 
 using ChunkCoord = Vec3u;
@@ -23,6 +23,7 @@ public:
     const VoxelType& getVoxel(ChunkCoord pos) const;
     VoxelID setVoxel(ChunkCoord pos, VoxelID new_voxel);
     const VoxelType& getVoxelType(VoxelID vid) const;
+    const std::array<VoxelID, CHUNK_SIZE>& getRawData() const;
     // Checks wether the chunk coord is not out of bounds 
     // (does not check if world coord is in this chunk)
     bool positionInChunk(ChunkCoord pos) const;
@@ -42,7 +43,7 @@ private:
     // for renderer to be able to change vao/vbo only for updated chunks
     mutable bool m_has_changed = true;
     size_t m_renderer_id = 0;
-    Vec3f m_world_pos;
+    Vec3f m_world_pos; //TODO: note: maybe position y not needed (since the chunks take all the y-axis)
 
     const std::vector<VoxelType>& m_voxel_types;
     std::array<VoxelID, CHUNK_SIZE> m_data;
