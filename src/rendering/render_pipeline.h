@@ -7,7 +7,7 @@
 #include "rendering/interface/irender_pass.h"
 #include "rendering/passes/glworld_render_pass.h"
 #include "voxel_engine/world.h"
-#include "camera.h"
+#include "voxel_engine/camera.h"
 
 
 class RenderPipeline {

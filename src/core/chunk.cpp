@@ -1,4 +1,6 @@
 #include "voxel_engine/chunk.h"
+#include "voxel_engine/voxel_types.h"
+#include <array>
 #include <iostream>
 
 bool Chunk::positionInChunk(ChunkCoord pos) const {
@@ -70,14 +72,20 @@ const std::array<VoxelID, CHUNK_SIZE>& Chunk::getRawData() const {
     return m_data;
 }
 
+/* TODO; maybe remove this
+void Chunk::setRawData(std::array<VoxelID, CHUNK_SIZE>&& new_data) {
+    m_data = std::move(new_data);
+}
+*/
 
 Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position): 
     m_has_changed(true),
     m_renderer_id(0),
-    m_voxel_types(voxel_types),
-    m_world_pos(position)
+    m_world_pos(position),
+    m_voxel_types(voxel_types)
 {
     // TODO: replace with better chunk generation
+    // TODO: maybe separate the generation logic from this constructor
 
     // Basic terrain generation
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
@@ -137,3 +145,11 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     setVoxel({CHUNK_WIDTH - 2, (unsigned int)ground + 1, CHUNK_DEPTH - 2}, 9); // Brick
     setVoxel({CHUNK_WIDTH - 2, (unsigned int)ground + 2, CHUNK_DEPTH - 2}, 10); // Glass
 }
+
+
+Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position, std::array<VoxelID, CHUNK_SIZE>&& raw_data):
+    m_has_changed(true),
+    m_renderer_id(0),
+    m_world_pos(position),
+    m_voxel_types(voxel_types),
+    m_data(std::move(raw_data)) {}

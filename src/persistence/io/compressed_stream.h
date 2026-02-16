@@ -60,6 +60,6 @@ public:
     void clear();
 };
 
-} // namespace io
-} // namespace voxeng
+}
+}
 

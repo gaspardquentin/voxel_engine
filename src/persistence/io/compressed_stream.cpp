@@ -7,15 +7,10 @@
 namespace voxeng {
 namespace io {
 
-// =============================================================================
-// CompressedFileWriter
-// =============================================================================
-
 CompressedFileWriter::CompressedFileWriter(std::string file_path)
     : m_file_path(std::move(file_path)) {}
 
 bool CompressedFileWriter::save() {
-    // 1. Compress
     uLongf compressed_size = compressBound(m_buffer.size());
     std::vector<char> compressed_data(compressed_size);
 
@@ -31,7 +26,6 @@ bool CompressedFileWriter::save() {
 
     compressed_data.resize(compressed_size);
 
-    // 2. Write to Disk
     std::ofstream file(m_file_path, std::ios::binary);
     if (!file) {
         std::cerr << "CompressedFileWriter: failed to open file " << m_file_path << "\n";
@@ -42,9 +36,6 @@ bool CompressedFileWriter::save() {
     file.write(reinterpret_cast<const char*>(&original_size), sizeof(original_size));
     file.write(compressed_data.data(), compressed_data.size());
 
-    // Optional: Log success
-    // std::cout << "Saved compressed file: " << m_file_path << "\n";
-
     clear();
     return true;
 }
@@ -52,10 +43,6 @@ bool CompressedFileWriter::save() {
 void CompressedFileWriter::clear() {
     m_buffer.clear();
 }
-
-// =============================================================================
-// CompressedFileReader
-// =============================================================================
 
 CompressedFileReader::CompressedFileReader(std::string file_path)
     : m_file_path(std::move(file_path)) {}
@@ -68,7 +55,6 @@ bool CompressedFileReader::load() {
         return false;
     }
 
-    // 1. Read Header (Original Size)
     uint64_t uncompressed_size = 0;
     file.read(reinterpret_cast<char*>(&uncompressed_size), sizeof(uncompressed_size));
 
@@ -77,10 +63,8 @@ bool CompressedFileReader::load() {
         return false;
     }
 
-    // 2. Read Compressed Data
     std::vector<char> compressed_data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-    // 3. Decompress
     m_buffer.resize(uncompressed_size);
     uLongf dest_len = uncompressed_size;
 
@@ -110,5 +94,5 @@ void CompressedFileReader::clear() {
     m_cursor = 0;
 }
 
-} // namespace io
-} // namespace voxeng
+}
+}

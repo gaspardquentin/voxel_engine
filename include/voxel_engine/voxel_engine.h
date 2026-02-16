@@ -1,9 +1,9 @@
 #pragma once
 
+#include "voxel_engine/save_manager.h"
 #include "voxel_engine/voxel_types.h"
 #include "world.h"
-
-enum Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
+#include "camera.h"
 
 enum class TextureMode { TEXTURE_ARRAY_2D, TEXTURE_ATLAS };
 
@@ -24,6 +24,11 @@ public:
     ~VoxelEngine();
 
     World& getWorld();
+    void setWorld(World&& world);
+    Camera& getCamera(); //TODO: maybe remove this
+    SaveManager& getSaveManager();
+    const Camera& getCamera() const;
+
     void render();
     void processMovementPlayer(Movement mov, float delta_time);
     void processMovementCamera(float xoffset, float yoffset, bool constrain_pitch = true);

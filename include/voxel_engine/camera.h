@@ -5,9 +5,10 @@
 
 
 #include "voxel_engine/math_utils.h"
-#include "voxel_engine/voxel_engine.h"
 
-#include "../config.h"
+enum Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
+
+#include "config.h"
 
 #ifdef RENDERING_OPENGL
 #include <glm/glm.hpp>

@@ -1,9 +1,8 @@
 #include "voxel_engine/world.h"
-#include "rendering/camera.h"
-#include "voxel_engine/callbacks.h"
-#include "voxel_engine/chunk.h"
+#include "voxel_engine/camera.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/save_format.h"
+#include "voxel_engine/voxel_types.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -24,13 +23,15 @@ public:
     uint8_t m_render_distance;
     uint64_t m_seed;
 
-    Impl(uint8_t render_distance, uint64_t seed):
+    Impl(uint8_t render_distance, uint64_t seed, bool generate_chunks):
         //m_chunk_generator(DEFAULT_CHUNK_GENERATOR),
         //m_voxel_change_fun(DEFAULT_VOXEL_CHANGE_FUNC),
         m_voxel_types(DEFAULT_VOXEL_TYPES),
         m_render_distance(render_distance),
         m_seed(seed) {
-        generateChunks();
+        if (generate_chunks) {
+            generateChunks();
+        }
     }
 
     ~Impl() {}
@@ -112,10 +113,12 @@ public:
     static ChunkID getChunkId(WorldCoord pos);
 };
 
-World::World(uint64_t seed): m_impl(new Impl(DEFAULT_RENDER_DISTANCE, seed)) {}
-World::World(uint8_t render_distance, uint64_t seed): m_impl(new Impl(render_distance, seed)) {}
+World::World(uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(DEFAULT_RENDER_DISTANCE, seed, generate_chunks)) {}
+World::World(uint8_t render_distance, uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(render_distance, seed, generate_chunks)) {}
 
-World::~World() { delete m_impl; }
+World::~World() = default;
+World::World(World&&) noexcept = default;
+World& World::operator=(World&&) noexcept = default;
 
 
 /* TODO: use those once callback system is implemented
@@ -221,9 +224,26 @@ uint64_t World::getSeed() const {
     return m_impl->m_seed;
 }
 
-World World::fromData(const WorldSaveData& data) {
+World World::fromData(WorldSaveData& data) {
+    World world{data.world_seed, false};
 
-    return World(data.world_seed);
+    world.m_impl->m_chunks.reserve(data.chunks_nbr);
+    int loaded_count = 0;
+    for (auto& chunk_data: data.chunks) {
+        //TODO: maybe store the ChunkID directly in the binary file
+        //so that we don't have to do this transformation
+        ChunkID pos = Impl::getChunkId(chunk_data.chunk_pos);
+        Chunk c{
+            DEFAULT_VOXEL_TYPES, // TODO: REPLACE THIS !! with something stored on the save file
+            chunk_data.chunk_pos,
+            std::move(chunk_data.voxels)
+        };
+        c.setRendererId(loaded_count);
+        world.m_impl->m_chunks.insert({pos, std::move(c)});
+        loaded_count++;
+    }
+
+    return std::move(world);
 }
 
 WorldSaveData World::toData() const {
@@ -235,7 +255,8 @@ WorldSaveData World::toData() const {
         chunk_data.chunk_pos = chunk.getWorldPos();
         const auto& voxels = chunk.getRawData();
         for (size_t i = 0; i < chunk_data.voxels.size(); i++) {
-            chunk_data.voxels[i].type = voxels[i];
+            //chunk_data.voxels[i].type = voxels[i];
+            chunk_data.voxels[i] = voxels[i];
         }
         save.chunks.push_back(chunk_data);
     }

@@ -27,11 +27,13 @@ struct VoxelSaveData {
 struct ChunkSaveData {
 	Vec3f chunk_pos; //note: maybe y position not needed
 	// std::vector<VoxelID> ids_used; note: use this when we scale the number of voxel types
-	std::array<VoxelSaveData, CHUNK_SIZE> voxels = {0}; 
+	//std::array<VoxelSaveData, CHUNK_SIZE> voxels = {0}; 
+	std::array<VoxelID, CHUNK_SIZE> voxels = {0}; 
 	//TODO: IMPORTANT : since we are not generating chunks on the y-axis, what should we do ? 
 	// get rid of the chunk_height ? But then how do we calculate the number of voxels to save per chunk ?
 };
 
+//TODO: add voxel types information somewhere
 struct WorldSaveData {
 	uint16_t format_version = FORMAT_VERSION;
 	uint16_t format_sub_version = FORMAT_SUB_VERSION;

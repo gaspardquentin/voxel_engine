@@ -3,6 +3,7 @@
 #include "rendering/opengl_texture_array.h"
 #include "rendering/shader.h"
 #include "rendering/world_mesh_builder.h"
+#include "voxel_engine/world.h"
 
 #include <memory>
 #include <vector>

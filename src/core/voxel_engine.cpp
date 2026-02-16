@@ -1,13 +1,13 @@
 #include "voxel_engine/voxel_engine.h"
+#include "voxel_engine/save_manager.h"
 #include "voxel_engine/world.h"
 #include "voxel_engine/math_utils.h"
-#include "rendering/camera.h"
+#include "voxel_engine/camera.h"
 #include "rendering/render_pipeline.h"
 #include "rendering/shader_manager.h"
 #include "rendering/passes/glui_render_pass.h"
 #include "rendering/passes/gl_entity_render_pass.h"
 
-#include <imgui.h>
 
 class VoxelEngine::Impl {
 public:
@@ -15,6 +15,7 @@ public:
     Camera m_camera;
     ShaderManager m_shader_manager;
     RenderPipeline m_render_pipeline;
+    SaveManager m_save_manager; //TODO: add it to the UI
 
     Impl(const VoxelEngineConfig& config):
         m_camera({0.0f, 0.0f, 3.0f}, config.width, config.height) //TODO: change this
@@ -50,6 +51,27 @@ VoxelEngine::~VoxelEngine() { delete m_impl; }
 
 World& VoxelEngine::getWorld() {
     return m_impl->m_world;
+}
+
+void VoxelEngine::setWorld(World&& world) {
+    m_impl->m_world = std::move(world);
+
+    auto *world_pass = m_impl->m_render_pipeline.getPass<GLWorldRenderPass>();
+    if (world_pass) {
+        world_pass->initChunkMeshes(m_impl->m_world.getChunks().size());
+    }
+}
+
+Camera& VoxelEngine::getCamera() {
+    return m_impl->m_camera;
+}
+
+const Camera& VoxelEngine::getCamera() const {
+    return m_impl->m_camera;
+}
+
+SaveManager& VoxelEngine::getSaveManager() {
+    return m_impl->m_save_manager;
 }
 
 void VoxelEngine::render() {
@@ -93,12 +115,3 @@ bool VoxelEngine::playerSetVoxel(uint8_t max_reach, VoxelID new_voxel) {
     return false;
 }
 
-void VoxelEngine::drawDebugUI(float fps) const {
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
-    if (ImGui::Begin("Engine Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        Vec3f player_pos = m_impl->m_camera.getPos();
-        ImGui::Text("FPS: %d", (int) fps);
-        ImGui::Text("Position: (%.2f, %.2f, %.2f)", player_pos.x, player_pos.y, player_pos.z);
-    }
-    ImGui::End();
-}

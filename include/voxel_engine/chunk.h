@@ -23,7 +23,8 @@ public:
     const VoxelType& getVoxel(ChunkCoord pos) const;
     VoxelID setVoxel(ChunkCoord pos, VoxelID new_voxel);
     const VoxelType& getVoxelType(VoxelID vid) const;
-    const std::array<VoxelID, CHUNK_SIZE>& getRawData() const;
+    const std::array<VoxelID, CHUNK_SIZE>& getRawData() const; // TODO: maybe remove this
+    void setRawData(std::array<VoxelID, CHUNK_SIZE>&& new_data);
     // Checks wether the chunk coord is not out of bounds 
     // (does not check if world coord is in this chunk)
     bool positionInChunk(ChunkCoord pos) const;
@@ -38,6 +39,7 @@ public:
         return ret;
     }
     Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position);
+    Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position, std::array<VoxelID, CHUNK_SIZE>&& raw_data);
 
 private:
     // for renderer to be able to change vao/vbo only for updated chunks

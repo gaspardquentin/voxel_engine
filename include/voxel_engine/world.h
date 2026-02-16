@@ -38,12 +38,15 @@ public:
     void setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture);
 
     // Serialization / Deserialization
-    static World fromData(const WorldSaveData& data);
+    static World fromData(WorldSaveData& data);
     WorldSaveData toData() const;
 
-    World(uint8_t render_distance, uint64_t seed);
-    World(uint64_t seed);
+    World(uint8_t render_distance, uint64_t seed, bool generate_chunks = true);
+    World(uint64_t seed, bool generate_chunks = true);
     ~World();
+
+    World(World&&) noexcept;
+    World& operator=(World&&) noexcept;
 
     void update();
     void setRenderDistance(uint8_t render_distance); //TODO: I don't think it belongs here,
@@ -54,5 +57,5 @@ public:
 
 private:
     class Impl;
-    Impl* m_impl;
+    std::unique_ptr<Impl> m_impl;
 };

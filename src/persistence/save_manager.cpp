@@ -2,15 +2,11 @@
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/save_format.h"
 #include "persistence/io/compressed_stream.h"
-#include <cstdint>
 #include <cstring>
-#include <fstream>
-#include <ios>
-#include <iterator>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 class voxeng::SaveManager::Impl {
 public:
@@ -18,7 +14,19 @@ public:
     std::string m_save_directory;
 
     Impl(std::string save_directory):
-        m_save_directory(save_directory) {}
+        m_save_directory(save_directory) {
+        __init();
+    }
+
+    //TODO: maybe rename this or change this idk
+    void __init() {
+        std::filesystem::path dir = m_save_directory;
+        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+            if (entry.is_regular_file()) {
+                m_last_save++;
+            }
+        }
+    }
 
     std::string getSavePath(SaveID save) const {
         return m_save_directory + "save_" + std::to_string(save);
@@ -34,6 +42,8 @@ voxeng::SaveManager::SaveManager():
 
 voxeng::SaveManager::SaveManager(std::string save_directory):
     m_impl(std::make_unique<Impl>(save_directory)) {}
+
+voxeng::SaveManager::~SaveManager() = default;
 
 void voxeng::SaveManager::setSaveDirectory(std::string save_directory) {
     //TODO: maybe verify it is a valid path
@@ -71,6 +81,8 @@ std::string voxeng::SaveManager::saveWorld(const World& world) {
     if (!writer.save()) {
         return "";
     }
+
+    m_impl->m_last_save++;
 
     return path;
 }

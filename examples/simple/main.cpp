@@ -6,6 +6,7 @@
 #include <backends/imgui_impl_opengl3.h>
 
 #include "imgui.h"
+#include "voxel_engine/gui_layer.h"
 #include "voxel_engine/voxel_engine.h"
 
 const unsigned int SCREEN_WIDTH = 3840; // or 1920 for FHD screen
@@ -172,6 +173,7 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     const char* glsl_version = "#version 410";
     ImGui_ImplOpenGL3_Init(glsl_version);
+    GUILayer engine_gui;
 
 
     /* ====== engine demo ======= */
@@ -216,7 +218,8 @@ int main() {
         lastFrame = currentFrame;
         processInput(window, engine, deltaTime);
 
-        engine.drawDebugUI(currentFps);
+        engine_gui.drawDebugUI(engine, currentFps);
+        engine_gui.drawSavesUI(engine);
         engine.render(); //TODO: change this
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
