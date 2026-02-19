@@ -57,6 +57,7 @@ VoxelID Chunk::setVoxel(ChunkCoord pos, VoxelID new_voxel) {
     VoxelID old = m_data[index];
     m_data[index] = new_voxel;
     m_has_changed = true;
+    m_persistence_dirty = true;
     return old;
 }
 
@@ -80,7 +81,7 @@ void Chunk::setRawData(std::array<VoxelID, CHUNK_SIZE>&& new_data) {
 
 Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position): 
     m_has_changed(true),
-    m_renderer_id(0),
+
     m_world_pos(position),
     m_voxel_types(voxel_types)
 {
@@ -149,7 +150,7 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
 
 Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position, std::array<VoxelID, CHUNK_SIZE>&& raw_data):
     m_has_changed(true),
-    m_renderer_id(0),
+    m_persistence_dirty(false),
     m_world_pos(position),
     m_voxel_types(voxel_types),
     m_data(std::move(raw_data)) {}

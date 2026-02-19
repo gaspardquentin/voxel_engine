@@ -1,13 +1,14 @@
 #pragma once
 
-#include "world.h"
+#include "voxel_engine/save_format.h"
+#include "voxel_engine/math_utils.h"
 #include <memory>
+#include <string>
+#include <vector>
 
-#define DEFAULT_SAVE_DIR ".saves/"
+#define DEFAULT_WORLDS_DIR "worlds/"
 
-namespace  voxeng {
-
-using SaveID = size_t;
+namespace voxeng {
 
 class SaveManager {
     class Impl;
@@ -15,15 +16,20 @@ class SaveManager {
 public:
     SaveManager();
     ~SaveManager();
-    SaveManager(std::string save_directory);
-    std::string saveWorld(const World& world);
-    World loadWorld(SaveID save);
 
-    void setSaveDirectory(std::string save_directory);
-    std::string getSaveDirectory() const;
+    bool createWorld(const std::string& name, uint64_t seed);
+    bool openWorld(const std::string& world_path);
+    void closeWorld();
+    bool isWorldOpen() const;
 
-    SaveID getLastSave();
+    bool saveChunk(ChunkID id, const ChunkSaveData& data);
+    bool loadChunk(ChunkID id, ChunkSaveData& data);
+    bool chunkExistsOnDisk(ChunkID id) const;
 
+    const WorldMetadata& getMetadata() const;
+    bool updateMetadata(const WorldMetadata& meta);
+
+    static std::vector<std::string> listWorlds(const std::string& base_dir = DEFAULT_WORLDS_DIR);
 };
 
 }

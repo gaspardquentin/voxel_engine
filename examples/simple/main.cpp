@@ -219,7 +219,8 @@ int main() {
         processInput(window, engine, deltaTime);
 
         engine_gui.drawDebugUI(engine, currentFps);
-        engine_gui.drawSavesUI(engine);
+        engine_gui.drawWorldsUI(engine);
+        engine.update(deltaTime);
         engine.render(); //TODO: change this
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

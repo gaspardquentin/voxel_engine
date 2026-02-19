@@ -6,22 +6,20 @@
 #include "voxel_engine/world.h"
 
 #include <memory>
-#include <vector>
+#include <unordered_map>
 
 class GLWorldRenderPass: public IRenderPass {
   const Shader& m_shader_prog;
   const World& m_world;
   WorldMeshBuilder m_world_mesh_builder;
 
-  std::vector<std::shared_ptr<GLMesh>> m_chunk_meshes;
+  std::unordered_map<ChunkID, std::shared_ptr<GLMesh>> m_chunk_meshes;
   OpenGLTextureArray m_textures;
 
 public:
   GLWorldRenderPass(const Shader& shader, const World& world);
 
   void loadTextures();
-  void addChunkMesh(std::shared_ptr<GLMesh> mesh);
-  void initChunkMeshes(int chunk_nbr);
 
   void render(const Camera& camera) override;
 

@@ -1,50 +1,41 @@
 #include "voxel_engine/world.h"
+#include "voxel_engine/callbacks.h"
 #include "voxel_engine/camera.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/save_format.h"
+#include "voxel_engine/save_manager.h"
 #include "voxel_engine/voxel_types.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include <queue>
-#include <set>
 #include <unordered_map>
-#include <unordered_set>
 
 class World::Impl {
 public:
-    //TODO: use this when callback system is implemented
-    //ChunkGeneratorCallback m_chunk_generator;
-    //VoxelChangeCallback m_voxel_change_fun;
     std::vector<VoxelType> m_voxel_types;
-    //std::vector<Chunk> m_chunks; TODO: remove this
     std::unordered_map<ChunkID, Chunk> m_chunks;
+    std::vector<ChunkID> m_to_generate;
     uint8_t m_render_distance;
     uint64_t m_seed;
+    voxeng::SaveManager* m_save_manager = nullptr;
 
     Impl(uint8_t render_distance, uint64_t seed, bool generate_chunks):
-        //m_chunk_generator(DEFAULT_CHUNK_GENERATOR),
-        //m_voxel_change_fun(DEFAULT_VOXEL_CHANGE_FUNC),
         m_voxel_types(DEFAULT_VOXEL_TYPES),
         m_render_distance(render_distance),
         m_seed(seed) {
         if (generate_chunks) {
-            generateChunks();
+            generateChunksInit();
         }
     }
 
     ~Impl() {}
 
-    void generateChunks() {
-        int render_dist_sq = m_render_distance * m_render_distance;
-        _generateChunksBFS(render_dist_sq);
+    void generateChunksInit() {
+        _preGenerateChunks(m_render_distance, {0, 0});
+        generateSomeChunks(m_render_distance);
     }
 
-
-
-    // Retrieve the actual position of the chunk in the world map by it's relative position 
-    // to the center chunk. TODO: make this doc more clear
     Vec3f _getChunkPosFromId(ChunkID chunk_id) {
         return {
             (float) chunk_id.x * CHUNK_WIDTH,
@@ -53,59 +44,61 @@ public:
         };
     }
 
+    void _preGenerateChunks(int render_distance, ChunkID start_chunk) {
+        for (int y = -render_distance; y <= render_distance; y++) {
+            for (int x = -render_distance; x <= render_distance; x++) {
+                ChunkID cid = {start_chunk.x + x, start_chunk.y + y};
+                if (m_chunks.find(cid) == m_chunks.end()) {
+                    m_to_generate.push_back(cid);
+                }
+            }
+        }
 
+        std::sort(m_to_generate.begin(), m_to_generate.end(),
+            [&start_chunk](const ChunkID& a, const ChunkID& b) {
+                return ChunkID::chebyshev(start_chunk, a) > ChunkID::chebyshev(start_chunk, b);
+            });
+    }
 
-    /**
-     * Generates the world's chunks.
-     * @param nb_to_generate the number of chunks to generate
-     */
-    void _generateChunksBFS(int nb_to_generate) {
-        std::queue<ChunkID> bfs_queue;
+    void generateSomeChunks(int amount_max) {
+        if (m_to_generate.size() == 0) {
+            return;
+        }
 
-        // Note: see this as a vector of position relative to the center chunk.
-        // since chunks occupies all the y-axis, this vector should be interpreted
-        // as {x, z} components rather than the usual {x, y} TODO: maybe make this note more clear
-        ChunkID chunk_id = {0, 0};
+        int count = std::min(amount_max, static_cast<int>(m_to_generate.size()));
+        for (int i = 0; i < count; i++) {
+            ChunkID chunk_id = m_to_generate.back();
+            m_to_generate.pop_back();
 
-        bfs_queue.push(chunk_id);
-        std::unordered_set<ChunkID> bfs_visited;
-        bfs_visited.insert(chunk_id);
+            // Try to load from disk first
+            if (m_save_manager && m_save_manager->chunkExistsOnDisk(chunk_id)) {
+                ChunkSaveData data;
+                if (m_save_manager->loadChunk(chunk_id, data)) {
+                    m_chunks.insert({chunk_id, {m_voxel_types, data.chunk_pos, std::move(data.voxels)}});
+                    continue;
+                }
+            }
 
-        int nb_generated = 0;
-        while (!bfs_queue.empty() && nb_generated < nb_to_generate) {
-            chunk_id = bfs_queue.front();
-            bfs_queue.pop();
+            // Generate new chunk
             auto chunk_pos = _getChunkPosFromId(chunk_id);
             m_chunks.insert({chunk_id, {m_voxel_types, chunk_pos}});
-            //m_chunks.push_back({m_voxel_types, chunk_pos});
-            m_chunks.at(chunk_id).setRendererId(nb_generated);
-            //m_chunks[chunk_id].setRendererId(nb_generated);
-            //m_chunks.back().setRendererId(nb_generated);
-            nb_generated++;
+        }
+    }
 
-            const std::vector<Vec2i> neighboors = {
-                chunk_id + Vec2i{1, 0}, // right
-                chunk_id + Vec2i{-1, 0}, // left
-                chunk_id + Vec2i{0, -1}, // back
-                chunk_id + Vec2i{0, 1} // front
-            };
-
-            /*
-            const std::vector<Vec3f> neighboors = {
-                chunk_pos + Vec3f{(float)Chunk::WIDTH, 0.0f, 0.0f}, // right
-                chunk_pos + Vec3f{-((float)Chunk::WIDTH), 0.0f, 0.0f}, // left
-                chunk_pos + Vec3f{0.0f, 0.0f, -((float)Chunk::DEPTH)}, // back
-                chunk_pos + Vec3f{0.0f, 0.0f, (float)Chunk::DEPTH} // front
-            };
-            */
-
-            for (auto neighboor: neighboors) {
-                if (bfs_visited.find(neighboor) == bfs_visited.end()) {
-                //if (std::find(bfs_visited.begin(), bfs_visited.end(), neighboor) == bfs_visited.end()) {
-                    bfs_queue.push(neighboor);
-                    //bfs_visited.push_back(neighboor);
-                    bfs_visited.insert(neighboor);
+    void _unloadDistantChunks(ChunkID player_chunk) {
+        int unload_distance = m_render_distance + 2;
+        for (auto it = m_chunks.begin(); it != m_chunks.end(); ) {
+            if (ChunkID::chebyshev(player_chunk, it->first) > unload_distance) {
+                // Save dirty chunk before unloading
+                if (m_save_manager && m_save_manager->isWorldOpen() && it->second.isPersistenceDirty()) {
+                    ChunkSaveData data;
+                    data.chunk_pos = it->second.getWorldPos();
+                    data.voxels = it->second.getRawData();
+                    m_save_manager->saveChunk(it->first, data);
                 }
+                it = m_chunks.erase(it);
+            } else {
+                ++it;
             }
         }
     }
@@ -120,16 +113,23 @@ World::~World() = default;
 World::World(World&&) noexcept = default;
 World& World::operator=(World&&) noexcept = default;
 
-
-/* TODO: use those once callback system is implemented
-void World::setChunkGenerator(ChunkGeneratorCallback callback) {
-    m_impl->m_chunk_generator = callback;
+void World::setSaveManager(voxeng::SaveManager* save_manager) {
+    m_impl->m_save_manager = save_manager;
 }
 
-void World::setVoxelChange(VoxelChangeCallback callback) {
-    m_impl->m_voxel_change_fun = callback;
+void World::flushAllDirtyChunks() {
+    if (!m_impl->m_save_manager || !m_impl->m_save_manager->isWorldOpen()) return;
+
+    for (auto& [id, chunk] : m_impl->m_chunks) {
+        if (chunk.isPersistenceDirty()) {
+            ChunkSaveData data;
+            data.chunk_pos = chunk.getWorldPos();
+            data.voxels = chunk.getRawData();
+            m_impl->m_save_manager->saveChunk(id, data);
+            chunk.clearPersistenceDirty();
+        }
+    }
 }
-*/
 
 void World::setVoxelTypes(std::vector<VoxelType> voxel_types) {
     m_impl->m_voxel_types = voxel_types;
@@ -161,7 +161,6 @@ VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
     auto pair = m_impl->m_chunks.find(chunk_id);
     if (pair == m_impl->m_chunks.end()) {
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
-        //TODO: maybe return something else
         return 0;
     }
     Chunk& chunk = pair->second;
@@ -181,7 +180,6 @@ const VoxelType& World::getVoxel(WorldCoord pos) const {
     auto pair = m_impl->m_chunks.find(chunk_id);
     if (pair == m_impl->m_chunks.end()) {
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
-        //TODO: maybe return something else
         return m_impl->m_voxel_types[0];
     }
     Chunk& chunk = pair->second;
@@ -189,21 +187,13 @@ const VoxelType& World::getVoxel(WorldCoord pos) const {
     return chunk.getVoxel(chunk_pos);
 }
 
-
-/* TODO: remove this or implement this
-std::optional<Vec3f> World::getVoxelTopLeftPos(Vec3f pos_inside) const {
-    return {};
-}
-*/
-
-
 const std::unordered_map<ChunkID, Chunk>& World::getChunks() const {
     return m_impl->m_chunks;
 }
 
 void World::update() {
-    //TODO: implement this (if needed) (this might be great to use callbacks there)
-    std::cerr << "Word::update(): TODO: implement this\n";
+    int chunk_amount_to_gen = 2;
+    m_impl->generateSomeChunks(chunk_amount_to_gen);
 }
 
 void World::setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture) {
@@ -214,8 +204,6 @@ void World::setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture) {
     m_impl->m_voxel_types[vid].setTexture(texture);
 }
 
-
-
 void World::setSeed(uint64_t seed) {
     m_impl->m_seed = seed;
 }
@@ -224,42 +212,8 @@ uint64_t World::getSeed() const {
     return m_impl->m_seed;
 }
 
-World World::fromData(WorldSaveData& data) {
-    World world{data.world_seed, false};
-
-    world.m_impl->m_chunks.reserve(data.chunks_nbr);
-    int loaded_count = 0;
-    for (auto& chunk_data: data.chunks) {
-        //TODO: maybe store the ChunkID directly in the binary file
-        //so that we don't have to do this transformation
-        ChunkID pos = Impl::getChunkId(chunk_data.chunk_pos);
-        Chunk c{
-            DEFAULT_VOXEL_TYPES, // TODO: REPLACE THIS !! with something stored on the save file
-            chunk_data.chunk_pos,
-            std::move(chunk_data.voxels)
-        };
-        c.setRendererId(loaded_count);
-        world.m_impl->m_chunks.insert({pos, std::move(c)});
-        loaded_count++;
-    }
-
-    return std::move(world);
+void World::updateChunks(WorldCoord pos) {
+    ChunkID player_chunk = Impl::getChunkId(pos);
+    m_impl->_preGenerateChunks(m_impl->m_render_distance, player_chunk);
+    m_impl->_unloadDistantChunks(player_chunk);
 }
-
-WorldSaveData World::toData() const {
-    WorldSaveData save;
-    save.world_seed = m_impl->m_seed;
-    save.chunks_nbr = m_impl->m_chunks.size();
-    for (const auto& [_, chunk]: m_impl->m_chunks) {
-        ChunkSaveData chunk_data;
-        chunk_data.chunk_pos = chunk.getWorldPos();
-        const auto& voxels = chunk.getRawData();
-        for (size_t i = 0; i < chunk_data.voxels.size(); i++) {
-            //chunk_data.voxels[i].type = voxels[i];
-            chunk_data.voxels[i] = voxels[i];
-        }
-        save.chunks.push_back(chunk_data);
-    }
-    return save;
-}
-

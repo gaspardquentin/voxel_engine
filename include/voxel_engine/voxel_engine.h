@@ -14,35 +14,36 @@ struct VoxelEngineConfig {
     TextureMode texture_mode = TextureMode::TEXTURE_ARRAY_2D;
     std::string world_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/vertex.vert";
     std::string world_fragment_shader = VOXEL_ENGINE_SHADER_DIR "/fragment.frag";
-    std::string ui_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.vert"; //TODO: maybe rename shader or path
+    std::string ui_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.vert";
     std::string ui_fragment_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.frag";
 };
 
 class VoxelEngine {
 public:
-    VoxelEngine(const VoxelEngineConfig& config); //TODO: implement this
+    VoxelEngine(const VoxelEngineConfig& config);
     ~VoxelEngine();
 
     World& getWorld();
     void setWorld(World&& world);
-    Camera& getCamera(); //TODO: maybe remove this
-    SaveManager& getSaveManager();
+    Camera& getCamera();
+    voxeng::SaveManager& getSaveManager();
     const Camera& getCamera() const;
 
+    void createNewWorld(const std::string& name);
+    void loadExistingWorld(const std::string& world_path);
+
     void render();
+    void update(float delta_time);
     void processMovementPlayer(Movement mov, float delta_time);
     void processMovementCamera(float xoffset, float yoffset, bool constrain_pitch = true);
     void processZoomCamera(float yoffset);
 
-    //TODO: maybe remove the player from the name of those methods
     bool playerPlaceVoxel(uint8_t max_reach, VoxelID voxel);
     bool playerRemoveVoxel(uint8_t max_reach);
-    bool playerSetVoxel(uint8_t max_reach, VoxelID new_voxel); //TODO: maybe move this into voxelengine constructor arg
+    bool playerSetVoxel(uint8_t max_reach, VoxelID new_voxel);
 
     // UI
     void drawDebugUI(float fps) const;
-    //TODO: maybe add render distance setter
-
 
 private:
     class Impl;

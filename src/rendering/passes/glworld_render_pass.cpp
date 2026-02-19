@@ -16,25 +16,12 @@ GLWorldRenderPass::GLWorldRenderPass(const Shader& shader,
     glClearColor(77.0f/255.0f, 109.0f/255.0f, 157.0f/255.0f, 1.0f);
 }
 
-void GLWorldRenderPass::addChunkMesh(std::shared_ptr<GLMesh> mesh) {
-    m_chunk_meshes.push_back(std::move(mesh));
-}
-
 void GLWorldRenderPass::loadTextures() {
     m_textures.loadTextures();
     m_textures.bind();
 }
 
-void GLWorldRenderPass::initChunkMeshes(int chunk_nbr) {
-    for (int i = 0; i < chunk_nbr ; i++) {
-        addChunkMesh(std::make_shared<GLMesh>());
-    }
-}
-
 void GLWorldRenderPass::render(const Camera& camera) {
-    if (m_chunk_meshes.empty()) {
-        return;
-    }
     glEnable(GL_DEPTH_TEST);
     m_shader_prog.bind();
 
@@ -52,14 +39,26 @@ void GLWorldRenderPass::render(const Camera& camera) {
     m_shader_prog.setUniform1i("uTextures", 0);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    for (auto& [_, c]: m_world.getChunks()) {
-        auto& cr = m_chunk_meshes[c.getRendererId()];
+    for (auto& [chunk_id, c]: m_world.getChunks()) {
+        auto& mesh = m_chunk_meshes[chunk_id];
+        if (!mesh) {
+            mesh = std::make_shared<GLMesh>();
+        }
         if (c.update()) {
             MeshData md = m_world_mesh_builder.buildMesh(c);
-            cr->upload(md);
+            mesh->upload(md);
         }
+        mesh->draw();
+    }
 
-        cr->draw();
+    // Remove stale mesh entries for unloaded chunks
+    const auto& active_chunks = m_world.getChunks();
+    for (auto it = m_chunk_meshes.begin(); it != m_chunk_meshes.end(); ) {
+        if (active_chunks.find(it->first) == active_chunks.end()) {
+            it = m_chunk_meshes.erase(it);
+        } else {
+            ++it;
+        }
     }
 
     m_shader_prog.unbind();

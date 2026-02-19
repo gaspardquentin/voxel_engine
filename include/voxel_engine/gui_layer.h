@@ -8,7 +8,10 @@ namespace voxeng {
 class GUILayer {
 public:
     void drawDebugUI(const VoxelEngine& engine, float fps);
-    void drawSavesUI(VoxelEngine& save_manager);
+    void drawWorldsUI(VoxelEngine& engine);
+
+private:
+    char m_world_name_buf[128] = "my_world";
 };
 
 }

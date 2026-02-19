@@ -12,6 +12,10 @@
 #include "math_utils.h"
 #include "save_format.h"
 
+namespace voxeng { class SaveManager; }
+
+//TODO: place this elsewhere
+enum Direction {EAST, WEST, NORTH, SOUTH};
 
 // render distance in chunk nbrs
 // TODO: maybe move this to config or even game
@@ -19,10 +23,6 @@
 
 class World {
 public:
-    // TODO: use those when callback system is implemented
-    //void setChunkGenerator(ChunkGeneratorCallback callback);
-    //void setVoxelChange(VoxelChangeCallback callback);
-
     // Important : the id 0 should imperatively be for AIR
     void setVoxelTypes(std::vector<VoxelType> voxel_types);
 
@@ -37,9 +37,8 @@ public:
 
     void setTextureForType(VoxelID vid, std::shared_ptr<Texture> texture);
 
-    // Serialization / Deserialization
-    static World fromData(WorldSaveData& data);
-    WorldSaveData toData() const;
+    void setSaveManager(voxeng::SaveManager* save_manager);
+    void flushAllDirtyChunks();
 
     World(uint8_t render_distance, uint64_t seed, bool generate_chunks = true);
     World(uint64_t seed, bool generate_chunks = true);
@@ -49,11 +48,12 @@ public:
     World& operator=(World&&) noexcept;
 
     void update();
-    void setRenderDistance(uint8_t render_distance); //TODO: I don't think it belongs here,
-    // I guess the engine or camera should be the one asking for generation or something like that
+    void setRenderDistance(uint8_t render_distance);
     uint8_t getRenderDistance() const;
     void setSeed(uint64_t seed);
     uint64_t getSeed() const;
+
+    void updateChunks(WorldCoord pos);
 
 private:
     class Impl;

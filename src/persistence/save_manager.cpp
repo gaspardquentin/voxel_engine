@@ -1,117 +1,155 @@
 #include "voxel_engine/save_manager.h"
-#include "voxel_engine/math_utils.h"
 #include "voxel_engine/save_format.h"
 #include "persistence/io/compressed_stream.h"
-#include <cstring>
-#include <memory>
-#include <string>
-#include <vector>
 #include <filesystem>
+#include <iostream>
+#include <string>
 
 class voxeng::SaveManager::Impl {
 public:
-    SaveID m_last_save = 0;
-    std::string m_save_directory;
+    std::string m_world_path;
+    WorldMetadata m_metadata;
+    bool m_is_open = false;
 
-    Impl(std::string save_directory):
-        m_save_directory(save_directory) {
-        __init();
+    std::string chunkFilePath(ChunkID id) const {
+        return m_world_path + "chunks/" + std::to_string(id.x) + "_" + std::to_string(id.y) + ".dat";
     }
 
-    //TODO: maybe rename this or change this idk
-    void __init() {
-        std::filesystem::path dir = m_save_directory;
-        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-            if (entry.is_regular_file()) {
-                m_last_save++;
-            }
-        }
+    std::string metaFilePath() const {
+        return m_world_path + "world.meta";
     }
 
-    std::string getSavePath(SaveID save) const {
-        return m_save_directory + "save_" + std::to_string(save);
+    bool writeMetadata() {
+        voxeng::io::CompressedFileWriter writer(metaFilePath());
+        writer.write(m_metadata.format_version);
+        writer.write(m_metadata.format_sub_version);
+        writer.write(m_metadata.world_seed);
+        return writer.save();
     }
 
-    std::string getLastSavePath() const {
-        return getSavePath(m_last_save);
+    bool readMetadata() {
+        voxeng::io::CompressedFileReader reader(metaFilePath());
+        if (!reader.load()) return false;
+        reader.read(m_metadata.format_version);
+        reader.read(m_metadata.format_sub_version);
+        reader.read(m_metadata.world_seed);
+        return true;
     }
 };
 
 voxeng::SaveManager::SaveManager():
-    m_impl(std::make_unique<Impl>(DEFAULT_SAVE_DIR)) {}
-
-voxeng::SaveManager::SaveManager(std::string save_directory):
-    m_impl(std::make_unique<Impl>(save_directory)) {}
+    m_impl(std::make_unique<Impl>()) {}
 
 voxeng::SaveManager::~SaveManager() = default;
 
-void voxeng::SaveManager::setSaveDirectory(std::string save_directory) {
-    //TODO: maybe verify it is a valid path
-    m_impl->m_save_directory = save_directory;
-}
+bool voxeng::SaveManager::createWorld(const std::string& name, uint64_t seed) {
+    std::string path = std::string(DEFAULT_WORLDS_DIR) + name + "/";
 
-std::string voxeng::SaveManager::getSaveDirectory() const {
-    return m_impl->m_save_directory;
-}
-
-SaveID voxeng::SaveManager::getLastSave() {
-    return m_impl->m_last_save;
-}
-
-std::string voxeng::SaveManager::saveWorld(const World& world) {
-    std::string path = m_impl->getLastSavePath();
-    voxeng::io::CompressedFileWriter writer(path);
-
-    const WorldSaveData saveData = world.toData();
-
-    writer.write(saveData.format_version);
-    writer.write(saveData.format_sub_version);
-    writer.write(saveData.world_seed);
-    writer.write(saveData.chunks_nbr);
-
-    for (const auto& chunk: saveData.chunks) {
-        writer.write(chunk.chunk_pos.x);
-        writer.write(chunk.chunk_pos.y);
-        writer.write(chunk.chunk_pos.z);
-        for (const auto& voxel: chunk.voxels) {
-            writer.write(voxel);
-        }
+    try {
+        std::filesystem::create_directories(path + "chunks/");
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "<voxeng> SaveManager: failed to create world directory: " << e.what() << "\n";
+        return false;
     }
 
-    if (!writer.save()) {
-        return "";
+    m_impl->m_world_path = path;
+    m_impl->m_metadata = {};
+    m_impl->m_metadata.world_seed = seed;
+    m_impl->m_is_open = true;
+
+    if (!m_impl->writeMetadata()) {
+        std::cerr << "<voxeng> SaveManager: failed to write world.meta\n";
+        m_impl->m_is_open = false;
+        return false;
     }
 
-    m_impl->m_last_save++;
-
-    return path;
+    return true;
 }
 
-World voxeng::SaveManager::loadWorld(SaveID save) {
-    std::string path = m_impl->getSavePath(save);
+bool voxeng::SaveManager::openWorld(const std::string& world_path) {
+    std::string path = world_path;
+    if (!path.empty() && path.back() != '/') path += '/';
+
+    if (!std::filesystem::exists(path + "world.meta")) {
+        std::cerr << "<voxeng> SaveManager: world.meta not found in " << path << "\n";
+        return false;
+    }
+
+    m_impl->m_world_path = path;
+    if (!m_impl->readMetadata()) {
+        std::cerr << "<voxeng> SaveManager: failed to read world.meta\n";
+        return false;
+    }
+
+    m_impl->m_is_open = true;
+    return true;
+}
+
+void voxeng::SaveManager::closeWorld() {
+    m_impl->m_is_open = false;
+    m_impl->m_world_path.clear();
+    m_impl->m_metadata = {};
+}
+
+bool voxeng::SaveManager::isWorldOpen() const {
+    return m_impl->m_is_open;
+}
+
+bool voxeng::SaveManager::saveChunk(ChunkID id, const ChunkSaveData& data) {
+    if (!m_impl->m_is_open) return false;
+
+    voxeng::io::CompressedFileWriter writer(m_impl->chunkFilePath(id));
+    writer.write(data.chunk_pos.x);
+    writer.write(data.chunk_pos.y);
+    writer.write(data.chunk_pos.z);
+    for (const auto& voxel : data.voxels) {
+        writer.write(voxel);
+    }
+    return writer.save();
+}
+
+bool voxeng::SaveManager::loadChunk(ChunkID id, ChunkSaveData& data) {
+    if (!m_impl->m_is_open) return false;
+
+    std::string path = m_impl->chunkFilePath(id);
     voxeng::io::CompressedFileReader reader(path);
+    if (!reader.load()) return false;
 
-    if (!reader.load()) {
-        return {0};
+    reader.read(data.chunk_pos.x);
+    reader.read(data.chunk_pos.y);
+    reader.read(data.chunk_pos.z);
+    for (auto& voxel : data.voxels) {
+        reader.read(voxel);
     }
-
-    WorldSaveData saveData;
-    reader.read(saveData.format_version);
-    reader.read(saveData.format_sub_version);
-    reader.read(saveData.world_seed);
-    reader.read(saveData.chunks_nbr);
-
-    for (size_t i = 0; i < saveData.chunks_nbr; i++) {
-        ChunkSaveData chunk;
-        reader.read(chunk.chunk_pos.x);
-        reader.read(chunk.chunk_pos.y);
-        reader.read(chunk.chunk_pos.z);
-        for (auto& voxel: chunk.voxels) {
-            reader.read(voxel);
-        }
-        saveData.chunks.push_back(chunk);
-    }
-
-    return World::fromData(saveData);
+    return true;
 }
 
+bool voxeng::SaveManager::chunkExistsOnDisk(ChunkID id) const {
+    if (!m_impl->m_is_open) return false;
+    return std::filesystem::exists(m_impl->chunkFilePath(id));
+}
+
+const WorldMetadata& voxeng::SaveManager::getMetadata() const {
+    return m_impl->m_metadata;
+}
+
+bool voxeng::SaveManager::updateMetadata(const WorldMetadata& meta) {
+    if (!m_impl->m_is_open) return false;
+    m_impl->m_metadata = meta;
+    return m_impl->writeMetadata();
+}
+
+std::vector<std::string> voxeng::SaveManager::listWorlds(const std::string& base_dir) {
+    std::vector<std::string> worlds;
+    if (!std::filesystem::exists(base_dir)) return worlds;
+
+    for (const auto& entry : std::filesystem::directory_iterator(base_dir)) {
+        if (entry.is_directory()) {
+            std::string meta_path = entry.path().string() + "/world.meta";
+            if (std::filesystem::exists(meta_path)) {
+                worlds.push_back(entry.path().string());
+            }
+        }
+    }
+    return worlds;
+}

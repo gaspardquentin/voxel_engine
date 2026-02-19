@@ -56,6 +56,34 @@ struct Vec2T {
  
     float length() const { return std::sqrt(x * x + y * y); }
 
+    T dist(const Vec2T& other) const {
+        return dist(*this, other);
+    }
+
+    static T dist(const Vec2T& v1, const Vec2T& v2) {
+        return sqrt(
+            (v1.x - v2.x) * (v1.x - v2.x) +
+            (v1.y - v2.y) * (v1.y - v2.y)
+        );
+    }
+
+    static T chebyshev(const Vec2T& v1, const Vec2T& v2) {
+        return std::max(std::abs(v1.x - v2.x), std::abs(v1.y - v2.y));
+    }
+
+    struct DistanceOrderASC {
+        bool operator()(Vec2T from, Vec2T to1, Vec2T to2) const {
+            return from.dist(to1) < from.dist(to2);
+        }
+    };
+
+
+    struct DistanceOrderDESC {
+        bool operator()(Vec2T from, Vec2T to1, Vec2T to2) const {
+            return from.dist(to1) >= from.dist(to2);
+        }
+    };
+
     friend std::ostream& operator<<(std::ostream& os, const Vec2T& vec) {
         os << "(" << vec.x << ", " << vec.y << ")";
         return os;
@@ -136,6 +164,30 @@ struct Vec3T {
             vec.z / vec.length(),
         };
     }
+
+    T dist(const Vec3T& other) {
+        return dist(*this, other);
+    }
+
+    static T dist(const Vec3T& v1, const Vec3T& v2) {
+        return sqrt(
+            (v1.x - v2.x) * (v1.x - v2.x) +
+            (v1.y - v2.y) * (v1.y - v2.y) +
+            (v1.z - v2.z) * (v1.z - v2.z)
+        );
+    }
+
+    struct DistanceOrderASC {
+        bool operator()(Vec3T from, Vec3T to1, Vec3T to2) const {
+            return from.dist(to1) < from.dist(to2);
+        }
+    };
+
+    struct DistanceOrderDESC {
+        bool operator()(Vec3T from, Vec3T to1, Vec3T to2) const {
+            return from.dist(to1) >= from.dist(to2);
+        }
+    };
 
     friend std::ostream& operator<<(std::ostream& os, const Vec3T& vec) {
         os << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
