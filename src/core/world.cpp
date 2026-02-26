@@ -5,6 +5,7 @@
 #include "voxel_engine/save_format.h"
 #include "voxel_engine/save_manager.h"
 #include "voxel_engine/voxel_types.h"
+#include "voxel_engine/world_coords.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -34,14 +35,6 @@ public:
     void generateChunksInit() {
         _preGenerateChunks(m_render_distance, {0, 0});
         generateSomeChunks(m_render_distance);
-    }
-
-    Vec3f _getChunkPosFromId(ChunkID chunk_id) {
-        return {
-            (float) chunk_id.x * CHUNK_WIDTH,
-            0.0f,
-            (float) chunk_id.y * CHUNK_DEPTH
-        };
     }
 
     void _preGenerateChunks(int render_distance, ChunkID start_chunk) {
@@ -80,7 +73,7 @@ public:
             }
 
             // Generate new chunk
-            auto chunk_pos = _getChunkPosFromId(chunk_id);
+            auto chunk_pos = voxeng::getChunkWorldPos(chunk_id);
             m_chunks.insert({chunk_id, {m_voxel_types, chunk_pos}});
         }
     }
@@ -103,7 +96,6 @@ public:
         }
     }
 
-    static ChunkID getChunkId(WorldCoord pos);
 };
 
 World::World(uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(DEFAULT_RENDER_DISTANCE, seed, generate_chunks)) {}
@@ -157,7 +149,7 @@ uint8_t World::getRenderDistance() const {
 }
 
 VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
-    ChunkID chunk_id = Impl::getChunkId(pos);
+    ChunkID chunk_id = voxeng::getChunkId(pos);
     auto pair = m_impl->m_chunks.find(chunk_id);
     if (pair == m_impl->m_chunks.end()) {
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
@@ -168,15 +160,8 @@ VoxelID World::setVoxel(WorldCoord pos, VoxelID new_voxel) {
     return chunk.setVoxel(chunk_pos, new_voxel);
 }
 
-ChunkID World::Impl::getChunkId(WorldCoord pos) {
-    return {
-        static_cast<int32_t>(std::floor(pos.x / static_cast<float>(Chunk::WIDTH))),
-        static_cast<int32_t>(std::floor(pos.z / static_cast<float>(Chunk::DEPTH)))
-    };
-}
-
 const VoxelType& World::getVoxel(WorldCoord pos) const {
-    ChunkID chunk_id = Impl::getChunkId(pos);
+    ChunkID chunk_id = voxeng::getChunkId(pos);
     auto pair = m_impl->m_chunks.find(chunk_id);
     if (pair == m_impl->m_chunks.end()) {
         std::cerr << "<voxeng> WARNING: Voxel of pos" << pos << "is out of world bounds.\n";
@@ -213,7 +198,7 @@ uint64_t World::getSeed() const {
 }
 
 void World::updateChunks(WorldCoord pos) {
-    ChunkID player_chunk = Impl::getChunkId(pos);
+    ChunkID player_chunk = voxeng::getChunkId(pos);
     m_impl->_preGenerateChunks(m_impl->m_render_distance, player_chunk);
     m_impl->_unloadDistantChunks(player_chunk);
 }

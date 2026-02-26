@@ -2,6 +2,8 @@
 
 #include "voxel_engine/save_manager.h"
 #include "voxel_engine/voxel_types.h"
+#include "voxel_engine/chat.h"
+#include "voxel_engine/command_registry.h"
 #include "world.h"
 #include "camera.h"
 
@@ -27,7 +29,11 @@ public:
     void setWorld(World&& world);
     Camera& getCamera();
     voxeng::SaveManager& getSaveManager();
+    voxeng::Chat& getChat();
+    voxeng::CommandRegistry& getCommandRegistry();
     const Camera& getCamera() const;
+
+    void handleChatInput(const std::string& sender_id, const std::string& content);
 
     void createNewWorld(const std::string& name);
     void loadExistingWorld(const std::string& world_path);

@@ -31,19 +31,15 @@ public:
     bool worldPositionInChunk(Vec3f world_pos) const;
     ChunkCoord getChunkPosFromWorld(Vec3f world_pos) const;
     const Vec3f& getWorldPos() const { return m_world_pos; }
-    inline bool update() const {
-        bool ret = m_has_changed;
-        m_has_changed = false;
-        return ret;
-    }
+    bool isRenderDirty() const { return m_render_dirty; }
+    void clearRenderDirty() const { m_render_dirty = false; }
     bool isPersistenceDirty() const { return m_persistence_dirty; }
     void clearPersistenceDirty() { m_persistence_dirty = false; }
     Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position);
     Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position, std::array<VoxelID, CHUNK_SIZE>&& raw_data);
 
 private:
-    // for renderer to be able to change vao/vbo only for updated chunks
-    mutable bool m_has_changed = true;
+    mutable bool m_render_dirty = true;
     bool m_persistence_dirty = true;
     Vec3f m_world_pos; //TODO: note: maybe position y not needed (since the chunks take all the y-axis)
 

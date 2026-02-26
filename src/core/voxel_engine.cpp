@@ -3,6 +3,8 @@
 #include "voxel_engine/world.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/camera.h"
+#include "voxel_engine/chat.h"
+#include "voxel_engine/command_registry.h"
 #include "rendering/render_pipeline.h"
 #include "rendering/shader_manager.h"
 #include "rendering/passes/glui_render_pass.h"
@@ -10,8 +12,8 @@
 #include <chrono>
 #include <iostream>
 
-const double TICK_RATE = 20.0;
-const double TICK_DURATION = 1.0 / TICK_RATE;
+const int TICK_RATE = 20;
+static constexpr auto TICK_DURATION = std::chrono::milliseconds((1000/TICK_RATE));
 
 class VoxelEngine::Impl {
 public:
@@ -20,13 +22,19 @@ public:
     ShaderManager m_shader_manager;
     RenderPipeline m_render_pipeline;
     voxeng::SaveManager m_save_manager;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_previous_tick = std::chrono::high_resolution_clock::now();
+    voxeng::Chat m_chat{256};
+    voxeng::CommandRegistry m_command_registry;
+    std::chrono::time_point<std::chrono::steady_clock> m_previous_tick = std::chrono::steady_clock::now();
     Vec3f m_last_generation_pos = {0.0f, 0.0f, 0.0f};
 
     Impl(const VoxelEngineConfig& config):
         m_camera({0.0f, 0.0f, 3.0f}, config.width, config.height)
     {
         m_world.setSaveManager(&m_save_manager);
+
+        for (const auto& cmd : voxeng::DEFAULT_COMMANDS) {
+            m_command_registry.registerCommand(cmd.first, cmd.second);
+        }
 
         m_shader_manager.load("world", config.world_vertex_shader, config.world_fragment_shader);
         m_shader_manager.load("ui", config.ui_vertex_shader, config.ui_fragment_shader);
@@ -79,6 +87,31 @@ voxeng::SaveManager& VoxelEngine::getSaveManager() {
     return m_impl->m_save_manager;
 }
 
+voxeng::Chat& VoxelEngine::getChat() {
+    return m_impl->m_chat;
+}
+
+voxeng::CommandRegistry& VoxelEngine::getCommandRegistry() {
+    return m_impl->m_command_registry;
+}
+
+void VoxelEngine::handleChatInput(const std::string& sender_id, const std::string& content) {
+    if (content.empty()) {
+        return;
+    }
+
+    if (content[0] == '/') {
+        voxeng::CommandContext ctx { m_impl->m_chat, m_impl->m_world };
+        bool ok = m_impl->m_command_registry.tryExecute(content, ctx);
+        if (!ok) {
+            m_impl->m_chat.sendMessage("error", "Invalid command.");
+        }
+        return;
+    }
+
+    m_impl->m_chat.sendMessage(sender_id, content);
+}
+
 void VoxelEngine::createNewWorld(const std::string& name) {
     uint64_t seed = generate_seed();
     if (!m_impl->m_save_manager.createWorld(name, seed)) {
@@ -107,16 +140,19 @@ void VoxelEngine::render() {
 }
 
 void VoxelEngine::update(float delta_time) {
-    auto current_time = std::chrono::high_resolution_clock::now();
-    if ((current_time - m_impl->m_previous_tick).count() < TICK_DURATION) {
+    auto current_time = std::chrono::steady_clock::now();
+    if (current_time - m_impl->m_previous_tick < TICK_DURATION) {
         return;
     }
+
+    //TODO: be sure the steady clock fix was not a scam
+
 
     m_impl->m_previous_tick = current_time;
     m_impl->m_world.update();
 
     const Vec3f& player_pos = m_impl->m_camera.getPos();
-    constexpr float GENERATION_TRESHOLD = 100.0f;
+    constexpr float GENERATION_TRESHOLD = 20.0f;
     if (Vec3f::dist(m_impl->m_last_generation_pos, player_pos) > GENERATION_TRESHOLD) {
         m_impl->m_world.updateChunks(player_pos);
         m_impl->m_last_generation_pos = player_pos;

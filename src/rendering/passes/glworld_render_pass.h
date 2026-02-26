@@ -5,6 +5,7 @@
 #include "rendering/world_mesh_builder.h"
 #include "voxel_engine/world.h"
 
+#include <chrono>
 #include <memory>
 #include <unordered_map>
 
@@ -15,6 +16,7 @@ class GLWorldRenderPass: public IRenderPass {
 
   std::unordered_map<ChunkID, std::shared_ptr<GLMesh>> m_chunk_meshes;
   OpenGLTextureArray m_textures;
+  std::chrono::steady_clock::time_point m_last_cleanup = std::chrono::steady_clock::now();
 
 public:
   GLWorldRenderPass(const Shader& shader, const World& world);

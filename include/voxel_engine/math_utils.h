@@ -6,6 +6,12 @@
 #include <functional>
 #include <iostream>
 #include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 /* =============== Helper Functions ===================== */
 namespace voxeng {
@@ -84,10 +90,24 @@ struct Vec2T {
         }
     };
 
+    // Accepts formats: "(1, 2)", "(1,2)", "1,2", "1, 2"
+    static Vec2T fromString(const std::string& str) {
+        std::string s = str;
+        if (!s.empty() && s.front() == '(') s.erase(0, 1);
+        if (!s.empty() && s.back() == ')') s.pop_back();
+        std::istringstream ss(s);
+        T x, y;
+        char comma;
+        ss >> x >> std::ws >> comma >> std::ws >> y;
+        if (ss.fail() || comma != ',')
+            throw std::invalid_argument("Invalid Vec2 format: " + str);
+        return {x, y};
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const Vec2T& vec) {
         os << "(" << vec.x << ", " << vec.y << ")";
         return os;
-    } 
+    }
 };
 
 using Vec2 = Vec2T<float>;
@@ -188,6 +208,20 @@ struct Vec3T {
             return from.dist(to1) >= from.dist(to2);
         }
     };
+
+    // Accepts formats: "(1, 2, 3)", "(1,2,3)", "1,2,3", "1, 2, 3"
+    static Vec3T fromString(const std::string& str) {
+        std::string s = str;
+        if (!s.empty() && s.front() == '(') s.erase(0, 1);
+        if (!s.empty() && s.back() == ')') s.pop_back();
+        std::istringstream ss(s);
+        T x, y, z;
+        char c1, c2;
+        ss >> x >> std::ws >> c1 >> std::ws >> y >> std::ws >> c2 >> std::ws >> z;
+        if (ss.fail() || c1 != ',' || c2 != ',')
+            throw std::invalid_argument("Invalid Vec3 format: " + str);
+        return {x, y, z};
+    }
 
     friend std::ostream& operator<<(std::ostream& os, const Vec3T& vec) {
         os << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";

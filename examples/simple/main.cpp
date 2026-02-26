@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <GL/glew.h>
@@ -11,6 +12,8 @@
 
 const unsigned int SCREEN_WIDTH = 3840; // or 1920 for FHD screen
 const unsigned int SCREEN_HEIGHT = 2160; // or 1080
+
+const std::string username = "local";
 
 float lastX = SCREEN_WIDTH / 2.0f;
 float lastY = SCREEN_HEIGHT / 2.0f;
@@ -147,7 +150,7 @@ int main() {
 
     // tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //glfwSwapInterval(0); // Disable V-Sync
+    glfwSwapInterval(0); // Disable V-Sync
 
 
     glewExperimental = GL_TRUE;
@@ -173,7 +176,7 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     const char* glsl_version = "#version 410";
     ImGui_ImplOpenGL3_Init(glsl_version);
-    GUILayer engine_gui;
+    voxeng::GUILayer engine_gui;
 
 
     /* ====== engine demo ======= */
@@ -220,6 +223,7 @@ int main() {
 
         engine_gui.drawDebugUI(engine, currentFps);
         engine_gui.drawWorldsUI(engine);
+        engine_gui.drawChatUI(engine, username);
         engine.update(deltaTime);
         engine.render(); //TODO: change this
         ImGui::Render();

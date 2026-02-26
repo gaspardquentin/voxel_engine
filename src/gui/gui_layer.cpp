@@ -17,7 +17,7 @@ void voxeng::GUILayer::drawDebugUI(const VoxelEngine& engine, float fps) {
 }
 
 void voxeng::GUILayer::drawWorldsUI(VoxelEngine& engine) {
-    ImGui::SetNextWindowPos(ImVec2(10, 100), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(ImVec2(10, 200), ImGuiCond_Appearing);
     if (ImGui::Begin("World Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 
         // New World section
@@ -54,6 +54,26 @@ void voxeng::GUILayer::drawWorldsUI(VoxelEngine& engine) {
             if (ImGui::Button("Save All Chunks")) {
                 engine.getWorld().flushAllDirtyChunks();
             }
+        }
+    }
+    ImGui::End();
+}
+
+void voxeng::GUILayer::drawChatUI(VoxelEngine& engine, std::string username) {
+    ImGui::SetNextWindowPos(ImVec2(10, 1500), ImGuiCond_Appearing);
+    if (ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        for (const Message& msg : engine.getChat().getAllMessages()) {
+            ImGui::Text("[%s][%s] %s", msg.sender_id.c_str(), msg.getFormattedTime().c_str(), msg.content.c_str());
+        }
+
+        bool send = ImGui::InputTextWithHint("##chat_input", "Type a message or /command...",
+            m_chat_input_buf, sizeof(m_chat_input_buf), ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::SameLine();
+        send |= ImGui::Button("Send");
+
+        if (send && m_chat_input_buf[0] != '\0') {
+            engine.handleChatInput(username, std::string(m_chat_input_buf));
+            m_chat_input_buf[0] = '\0';
         }
     }
     ImGui::End();

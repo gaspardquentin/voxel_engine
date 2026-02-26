@@ -105,8 +105,8 @@ set(VOXEL_ENGINE_PUBLIC_HEADERS
     include/voxel_engine/texture.h
     include/voxel_engine/chunk.h
     include/voxel_engine/mesh.h
-    include/voxel_engine/entity.h
     include/voxel_engine/resource_manager.h
+    include/voxel_engine/world_coords.h
 )
 
 # Internal headers

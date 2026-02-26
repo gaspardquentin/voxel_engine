@@ -44,20 +44,25 @@ void GLWorldRenderPass::render(const Camera& camera) {
         if (!mesh) {
             mesh = std::make_shared<GLMesh>();
         }
-        if (c.update()) {
+        if (c.isRenderDirty()) {
             MeshData md = m_world_mesh_builder.buildMesh(c);
             mesh->upload(md);
+            c.clearRenderDirty();
         }
         mesh->draw();
     }
 
-    // Remove stale mesh entries for unloaded chunks
-    const auto& active_chunks = m_world.getChunks();
-    for (auto it = m_chunk_meshes.begin(); it != m_chunk_meshes.end(); ) {
-        if (active_chunks.find(it->first) == active_chunks.end()) {
-            it = m_chunk_meshes.erase(it);
-        } else {
-            ++it;
+    // Remove stale mesh entries for unloaded chunks (throttled to once per second)
+    auto now = std::chrono::steady_clock::now();
+    if (now - m_last_cleanup >= std::chrono::seconds(1)) {
+        m_last_cleanup = now;
+        const auto& active_chunks = m_world.getChunks();
+        for (auto it = m_chunk_meshes.begin(); it != m_chunk_meshes.end(); ) {
+            if (active_chunks.find(it->first) == active_chunks.end()) {
+                it = m_chunk_meshes.erase(it);
+            } else {
+                ++it;
+            }
         }
     }
 
