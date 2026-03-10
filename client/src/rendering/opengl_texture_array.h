@@ -3,7 +3,7 @@
 #include "voxel_engine/client/texture.h"
 #include "voxel_engine/voxel_types.h"
 
-#include <GL/glext.h>
+//#include <GL/glext.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <string>

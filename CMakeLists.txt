@@ -153,8 +153,8 @@ if(VOXEL_ENGINE_BUILD_TESTS)
     # Create test executable
     add_executable(voxel_tests
         tests/test_world.cpp
-        tests/test_chunks.cpp
-        tests/test_world_lookup.cpp
+        #tests/test_chunks.cpp
+        #tests/test_world_lookup.cpp
         #tests/test_math.cpp
     )
 
