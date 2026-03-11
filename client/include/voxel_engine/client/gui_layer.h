@@ -14,6 +14,7 @@ public:
 private:
     char m_world_name_buf[128] = "my_world";
     char m_chat_input_buf[256] = {};
+    float m_gui_scale = 0.0f; // 0 = uninitialized, synced from FontGlobalScale on first draw
 };
 
 }

@@ -11,6 +11,17 @@ void voxeng::client::GUILayer::drawDebugUI(const Client& client, float fps) {
         Vec3f player_pos = client.getCamera().getPos();
         ImGui::Text("FPS: %d", (int) fps);
         ImGui::Text("Position: (%.2f, %.2f, %.2f)", player_pos.x, player_pos.y, player_pos.z);
+
+        ImGui::Separator();
+        ImGui::Text("GUI Scale");
+        if (m_gui_scale == 0.0f)
+            m_gui_scale = ImGui::GetIO().FontGlobalScale;
+        ImGui::SliderFloat("##gui_scale", &m_gui_scale, 0.5f, 3.0f, "%.1fx");
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            float ratio = m_gui_scale / ImGui::GetIO().FontGlobalScale;
+            ImGui::GetStyle().ScaleAllSizes(ratio);
+            ImGui::GetIO().FontGlobalScale = m_gui_scale;
+        }
     }
     ImGui::End();
 }
