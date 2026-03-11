@@ -9,5 +9,9 @@ void RenderPipeline::render(const Camera& camera) {
     }
 }
 
-} // namespace voxeng::client
+void RenderPipeline::render() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+}
 

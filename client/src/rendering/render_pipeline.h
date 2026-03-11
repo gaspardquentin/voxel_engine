@@ -46,6 +46,8 @@ public:
   }
 
   void render(const Camera& camera);
+  // For when there is no world loaded, only the start menu
+  void render();
 };
 
 }

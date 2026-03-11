@@ -33,8 +33,8 @@ class Camera {
   float m_mouse_sensitivity = MOUSE_SENSITIVITY; //TODO: maybe move this in voxelengine parameter (runtime)
   float m_zoom = CAMERA_DEFAULT_ZOOM;
 
-  unsigned int m_screen_width = 800; // Default
-  unsigned int m_screen_height = 600; // Default
+  unsigned int m_screen_width;
+  unsigned int m_screen_height;
 
   void updateCameraVectors()
   {
@@ -156,4 +156,4 @@ public:
 
 };
 
-} // namespace voxeng::client
+}

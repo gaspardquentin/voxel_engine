@@ -1,5 +1,6 @@
 #pragma once
 
+#include "voxel_engine/callbacks.h"
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/voxel_types.h"
@@ -16,8 +17,10 @@
 
 namespace voxeng::network {
 
+//TODO: maybe rename world joined ??
 struct WorldLoadEvent {
     std::vector<VoxelType> voxel_types;
+    WorldCoord spawn_pos = {0.0f, 12.0f, -5.0f}; // default spawn pos
 };
 
 struct ChunkDataEvent {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "voxel_engine/callbacks.h"
 #include "voxel_engine/client/camera.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_client_connection.h"
@@ -59,7 +60,9 @@ public:
     void setRenderDistance(uint8_t render_distance);
     uint8_t getRenderDistance() const;
 
-    const Camera& getCamera() const;
+    //const Camera& getCamera() const; TODO: maybe remove this
+
+    WorldCoord getPlayerPos() const;
 
     /* Input/Action handling */
     void moveCamera(float xoffset, float yoffset, bool constrain_pitch = true);

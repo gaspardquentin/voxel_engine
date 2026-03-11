@@ -8,7 +8,7 @@ namespace voxeng::client {
 void voxeng::client::GUILayer::drawDebugUI(Client& client, float fps) {
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
     if (ImGui::Begin("Engine Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        Vec3f player_pos = client.getCamera().getPos();
+        Vec3f player_pos = client.getPlayerPos();
         ImGui::Text("FPS: %d", (int) fps);
         ImGui::Text("Position: (%.2f, %.2f, %.2f)", player_pos.x, player_pos.y, player_pos.z);
 

@@ -28,7 +28,7 @@ class Client::Impl {
 public:
     network::IClientConnection& m_connection;
     ClientConfig& m_config;
-    Camera m_camera;
+    std::optional<Camera> m_camera;
     ShaderManager m_shader_manager;
     RenderPipeline m_render_pipeline;
     std::optional<ClientWorld> m_world;
@@ -44,7 +44,7 @@ public:
     Impl(ClientConfig& config, network::IClientConnection& connection):
         m_connection(connection),
         m_config(config),
-        m_camera({0.0f, 0.0f, 3.0f}, config.width, config.height),
+        //m_camera({0.0f, 0.0f, 3.0f}, config.width, config.height), //TODO: remove camera init (camera should not exist until user is connected to a world)
         m_render_distance(config.default_render_distance)
     {
         m_user = loadProfile();
@@ -104,12 +104,12 @@ public:
 
 
     bool playerSetVoxel(uint8_t max_reach, VoxelID new_voxel) {
-        if (!m_world.has_value()) {
+        if (!m_world.has_value() || !m_camera.has_value()) {
             return false;
         }
 
-        Vec3f player_pos = m_camera.getPos();
-        Vec3f camera_dir = m_camera.getFront();
+        Vec3f player_pos = m_camera->getPos();
+        Vec3f camera_dir = m_camera->getFront();
         Vec3f ray_cast = player_pos;
         for (int i = 0; i < max_reach; ++i) {
             ray_cast += camera_dir;
@@ -152,24 +152,43 @@ uint8_t Client::getRenderDistance() const {
     return m_impl->m_render_distance;
 }
 
+/* TODO: surely remove this (don't like the idea to give implem details)
 const Camera& Client::getCamera() const {
     return m_impl->m_camera;
 }
+*/
+
+WorldCoord Client::getPlayerPos() const {
+    if (!m_impl->m_camera.has_value()) {
+        return {0.0f, 0.0f, 0.0f};
+    }
+    return m_impl->m_camera->getPos();
+}
+
 
 void Client::setRenderDistance(uint8_t render_distance) {
     m_impl->m_render_distance = render_distance;
 }
 
 void Client::moveCamera(float xoffset, float yoffset, bool constrain_pitch) {
-    m_impl->m_camera.processEulerMovement(xoffset, yoffset, constrain_pitch);
+    if (!m_impl->m_camera.has_value()) {
+        return;
+    }
+    m_impl->m_camera->processEulerMovement(xoffset, yoffset, constrain_pitch);
 }
 
 void Client::zoomCamera(float yoffset) {
-    m_impl->m_camera.processZoom(yoffset);
+    if (!m_impl->m_camera.has_value()) {
+        return;
+    }
+    m_impl->m_camera->processZoom(yoffset);
 }
 
 void Client::movePlayer(Movement mov, float delta_time) {
-    m_impl->m_camera.processMovement(mov, delta_time);
+    if (!m_impl->m_camera.has_value()) {
+        return;
+    }
+    m_impl->m_camera->processMovement(mov, delta_time);
     m_impl->m_position_dirty = true;
 }
 
@@ -200,6 +219,8 @@ void Client::saveWorld() {
 
 void Client::leaveWorld() {
     m_impl->m_world.reset();
+    m_impl->m_camera.reset();
+    m_impl->m_position_dirty = false;
 }
 
 void Client::joinWorld() {
@@ -242,6 +263,8 @@ const VoxelType *Client::getWorldVoxelType(VoxelID vid) const {
 }
 
 void Client::handleEvent(network::WorldLoadEvent& event) {
+    m_impl->m_camera.emplace(event.spawn_pos, m_impl->m_config.width, m_impl->m_config.height);
+
     m_impl->m_world.reset();
     m_impl->m_world.emplace(event.voxel_types, m_impl->m_render_distance);
 
@@ -252,6 +275,7 @@ void Client::handleEvent(network::WorldLoadEvent& event) {
 }
 
 void Client::handleEvent(network::ChunkDataEvent& event) {
+    if (!m_impl->m_world.has_value()) return;
     m_impl->m_world->loadChunk(event.id, std::move(event.data));
 }
 
@@ -281,7 +305,11 @@ void Client::handleEvent(const network::VoxelChangedEvent& event) {
 
 
 void Client::render() {
-    m_impl->m_render_pipeline.render(m_impl->m_camera);
+    if (!m_impl->m_camera.has_value()) {
+        m_impl->m_render_pipeline.render();
+        return;
+    }
+    m_impl->m_render_pipeline.render(m_impl->m_camera.value());
 }
 
 void Client::update() {
@@ -290,10 +318,10 @@ void Client::update() {
         return;
     }
 
-    if (m_impl->m_position_dirty) {
+    if (m_impl->m_position_dirty && m_impl->m_camera.has_value()) {
         m_impl->m_connection.pushRequest(network::PlayerPositionRequest {
             m_impl->m_user.id,
-            m_impl->m_camera.getPos()
+            m_impl->m_camera->getPos()
         });
         m_impl->m_position_dirty = false;
     }
