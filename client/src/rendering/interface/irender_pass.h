@@ -8,6 +8,7 @@ namespace voxeng::client {
 
 class IRenderPass {
 public:
+  virtual ~IRenderPass() = default;
   virtual void render(const Camera& camera) = 0;
 };
 

@@ -7,7 +7,7 @@ namespace voxeng::client {
 
 class GUILayer {
 public:
-    void drawDebugUI(const Client& client, float fps);
+    void drawDebugUI(Client& client, float fps);
     void drawStartMenuUI(Client& client);
     void drawChatUI(Client& client, std::string username);
 

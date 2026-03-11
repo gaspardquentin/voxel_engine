@@ -198,6 +198,10 @@ void Client::saveWorld() {
     m_impl->m_connection.pushRequest(network::SaveWorldRequest{});
 }
 
+void Client::leaveWorld() {
+    m_impl->m_world.reset();
+}
+
 void Client::joinWorld() {
     m_impl->m_connection.pushRequest(network::JoinWorldRequest{
         m_impl->m_user,

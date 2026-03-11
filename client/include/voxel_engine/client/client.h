@@ -73,6 +73,9 @@ public:
     void createWorld(const std::string& name);
     void loadWorld(const std::string& world_path);
     void saveWorld();
+    //TODO: implement a DisconnectRequest/LeaveWorldRequest to notify the server
+    // that the user has left (needed for future multiplayer support)
+    void leaveWorld();
     //void joinWorld(const std::string& world_path); TODO: world path needed ?
     void joinWorld();
 

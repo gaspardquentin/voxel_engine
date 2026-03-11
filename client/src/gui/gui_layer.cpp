@@ -5,7 +5,7 @@
 
 namespace voxeng::client {
 
-void voxeng::client::GUILayer::drawDebugUI(const Client& client, float fps) {
+void voxeng::client::GUILayer::drawDebugUI(Client& client, float fps) {
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
     if (ImGui::Begin("Engine Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         Vec3f player_pos = client.getCamera().getPos();
@@ -21,6 +21,14 @@ void voxeng::client::GUILayer::drawDebugUI(const Client& client, float fps) {
             float ratio = m_gui_scale / ImGui::GetIO().FontGlobalScale;
             ImGui::GetStyle().ScaleAllSizes(ratio);
             ImGui::GetIO().FontGlobalScale = m_gui_scale;
+        }
+
+        if (client.isWorldOpen()) {
+            ImGui::Separator();
+            if (ImGui::Button("Save & Exit World")) {
+                client.saveWorld();
+                client.leaveWorld();
+            }
         }
     }
     ImGui::End();

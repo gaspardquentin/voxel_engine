@@ -17,7 +17,11 @@
 #include <unordered_map>
 #include <variant>
 
+
 namespace voxeng::server {
+
+const int TICK_RATE = 20;
+static constexpr auto TICK_DURATION = std::chrono::milliseconds((1000/TICK_RATE));
 
 class Server::Impl {
 public:
@@ -27,6 +31,7 @@ public:
     CommandRegistry m_command_registry;
     std::unique_ptr<World> m_world; //TODO: maybe add multiple worlds support (and portals) or remove world loading logic and set a unique world per server (and the server lifetime linked with the world's one)
     std::unordered_map<UserID, UserProfile> m_connected_users;
+    std::chrono::time_point<std::chrono::steady_clock> m_previous_tick = std::chrono::steady_clock::now();
 
     Impl(network::IServerConnection& connection):
         m_connection(connection) {}
@@ -44,6 +49,11 @@ Server::~Server() {
 }
 
 void Server::update(float delta_time) {
+    auto current_time = std::chrono::steady_clock::now();
+    if (current_time - m_impl->m_previous_tick < TICK_DURATION) {
+        return;
+    }
+
     while (auto req = m_impl->m_connection.pollRequest()) {
         std::visit([this](auto&& r) { handleRequest(r); }, *req);
     }

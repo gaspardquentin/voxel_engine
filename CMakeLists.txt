@@ -16,6 +16,7 @@ cmake_policy(SET CMP0135 NEW)
 option(VOXEL_ENGINE_BUILD_EXAMPLES "Build example programs" ON)
 option(VOXEL_ENGINE_BUILD_TESTS "Build tests" ON)
 option(VOXEL_ENGINE_BUILD_SHARED "Build as shared library" OFF)
+option(VOXEL_ENGINE_SANITIZE "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
 # =============================================================================
 # COMPILER SETTINGS
@@ -56,6 +57,12 @@ else()
     else()
         add_compile_options(-O3)
     endif()
+endif()
+
+# Sanitizers
+if(VOXEL_ENGINE_SANITIZE)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
 endif()
 
 # =============================================================================
@@ -127,6 +134,7 @@ if(VOXEL_ENGINE_BUILD_EXAMPLES)
     # Basic Demo
     add_executable(simple_demo
         examples/simple/main.cpp
+        examples/simple/App.cpp
     )
     target_link_libraries(simple_demo
         VoxelEngine::Client
@@ -244,4 +252,5 @@ message(STATUS "  Shared library: ${VOXEL_ENGINE_BUILD_SHARED}")
 message(STATUS "  Build examples: ${VOXEL_ENGINE_BUILD_EXAMPLES}")
 message(STATUS "  Build tests: ${VOXEL_ENGINE_BUILD_TESTS}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "  ASan enabled: ${VOXEL_ENGINE_SANITIZE}")
 
