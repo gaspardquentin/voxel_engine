@@ -1,4 +1,3 @@
-#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <GL/glew.h>
@@ -6,9 +5,15 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#include "App.h"
 #include "imgui.h"
-#include "voxel_engine/gui_layer.h"
-#include "voxel_engine/voxel_engine.h"
+#include "voxel_engine/client/camera.h"
+#include "voxel_engine/client/client.h"
+#include "voxel_engine/client/gui_layer.h"
+#include "voxel_engine/client/network/local_client_connection.h"
+#include "voxel_engine/network/local_transport.h"
+#include "voxel_engine/server/network/local_server_connection.h"
+#include "voxel_engine/server/server.h"
 
 const unsigned int SCREEN_WIDTH = 3840; // or 1920 for FHD screen
 const unsigned int SCREEN_HEIGHT = 2160; // or 1080
@@ -18,25 +23,21 @@ const std::string username = "local";
 float lastX = SCREEN_WIDTH / 2.0f;
 float lastY = SCREEN_HEIGHT / 2.0f;
 
-VoxelEngine* gVoxelEngine = nullptr; //global pointer needed for callbacks
-
-bool firstMouse = true; //TODO: maybe find better approach
-bool gamePaused = false;
+voxeng::client::Client *gClient = nullptr; //global ponter needed for callbacks
+App *gApp = nullptr;
 
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-    if (gamePaused) {
+    if (gApp == nullptr || gApp->isPaused()) {
         return;
     }
 
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
-    if (firstMouse)
-    {
+    if (gApp->consumeFirstMouse()) {
         lastX = xpos;
         lastY = ypos;
-        firstMouse = false;
     }
 
     float xoffset = xpos - lastX;
@@ -45,15 +46,14 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     lastX = xpos;
     lastY = ypos;
 
-    if (gVoxelEngine != nullptr) {
-        gVoxelEngine->processMovementCamera(xoffset, yoffset);
+    if (gClient != nullptr) {
+        gClient->moveCamera(xoffset, yoffset);
     }
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    if (gVoxelEngine != nullptr) {
-        gVoxelEngine->processZoomCamera(static_cast<float>(yoffset));
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (gClient != nullptr) {
+        gClient->zoomCamera(static_cast<float>(yoffset));
     }
 }
 
@@ -65,45 +65,41 @@ int maxReach = 3;
 
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (gVoxelEngine == nullptr) {
+    if (gClient == nullptr) {
         return;
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        gVoxelEngine->playerRemoveVoxel(maxReach);
+        gClient->removeVoxel(maxReach);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-        gVoxelEngine->playerPlaceVoxel(maxReach, voxelId);
+        gClient->placeVoxel(maxReach, voxelId);
     }
 }
 
 
-void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
+void processInput(GLFWwindow *window, App& app, voxeng::client::Client& client, float deltaTime) {
     static bool eWasDown = false;
     static bool escapeWasDown = false;
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        engine.processMovementPlayer(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        engine.processMovementPlayer(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        engine.processMovementPlayer(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        engine.processMovementPlayer(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        engine.processMovementPlayer(UP, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        engine.processMovementPlayer(DOWN, deltaTime);
+    if (!app.isPaused()) {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::FORWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::BACKWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::LEFT, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::RIGHT, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::UP, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            client.movePlayer(voxeng::client::DOWN, deltaTime);
+    }
 
     // Escape key event (pause mode)
     bool escapeIsDown = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
     if (escapeIsDown && !escapeWasDown) {
-        if (gamePaused) {
-            gamePaused = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            gamePaused = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
+        app.togglePause();
     }
     escapeWasDown = escapeIsDown;
 
@@ -114,7 +110,12 @@ void processInput(GLFWwindow *window, VoxelEngine& engine, float deltaTime) {
         if (voxelId > maxVoxel) {
             voxelId = 1;
         }
-        voxelName = engine.getWorld().getVoxelType(voxelId).getName();
+        if (client.isWorldOpen()) {
+            auto vt = client.getWorldVoxelType(voxelId);
+            if (vt != nullptr) {
+                voxelName = vt->getName();
+            }
+        }
     }
     eWasDown = eIsDown;
 }
@@ -148,8 +149,8 @@ int main() {
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // start with cursor visible for the world menu
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSwapInterval(0); // Disable V-Sync
 
 
@@ -176,18 +177,45 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     const char* glsl_version = "#version 410";
     ImGui_ImplOpenGL3_Init(glsl_version);
-    voxeng::GUILayer engine_gui;
+    voxeng::client::GUILayer engine_gui;
 
 
     /* ====== engine demo ======= */
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
-    VoxelEngineConfig engine_conf{
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT
-    };
-    VoxelEngine engine{engine_conf}; //TODO: maybe separate engine from renderer
-    gVoxelEngine = &engine;
+    voxeng::client::ClientConfig client_conf;
+    client_conf.width = SCREEN_WIDTH;
+    client_conf.height = SCREEN_HEIGHT;
+
+    //TODO: maybe move this into a Network builder or something (on the library itself, out of the example)
+    voxeng::network::LocalTransport local_transport; // Note: see this as the link between the server and the client
+    voxeng::network::LocalServerConnection server_connection{local_transport};
+    voxeng::network::LocalClientConnection client_connection{local_transport};
+
+    voxeng::client::Client client{client_conf, client_connection}; //TODO: maybe separate engine from renderer
+    client.setUsername("you");
+    voxeng::server::Server server{server_connection};
+    App app{window};
+    gClient = &client;
+    gApp = &app;
+
+    /*
+    // Multithreaded server approach (commented out due to lack of performance improvement)
+    std::atomic<bool> server_running{true};
+    std::thread server_thread([&server, &server_running]() {
+        auto last_time = std::chrono::steady_clock::now();
+        while (server_running) {
+            auto current_time = std::chrono::steady_clock::now();
+            std::chrono::duration<float> elapsed = current_time - last_time;
+            last_time = current_time;
+
+            server.update(elapsed.count());
+
+            // Yield CPU to prevent 100% core usage; Server::update handles the actual 20Hz pacing.
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+    */
 
     /* ===== fps calculation ====== */
     double lastTime = glfwGetTime();
@@ -219,18 +247,37 @@ int main() {
 
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        processInput(window, engine, deltaTime);
+        processInput(window, app, client, deltaTime);
+        app.update(client);
 
-        engine_gui.drawDebugUI(engine, currentFps);
-        engine_gui.drawWorldsUI(engine);
-        engine_gui.drawChatUI(engine, username);
-        engine.update(deltaTime);
-        engine.render(); //TODO: change this
+        switch (app.getState()) {
+            case START_MENU:
+                engine_gui.drawStartMenuUI(client);
+                break;
+            case GAME:
+            case PAUSE:
+                engine_gui.drawDebugUI(client, currentFps);
+                engine_gui.drawChatUI(client, username);
+                break;
+        }
+
+        client.update();
+        server.update(deltaTime);
+
+        client.render();
         ImGui::Render();
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    /*
+    // Multithreaded server shutdown
+    server_running = false;
+    server_thread.join();
+    */
+
     glfwDestroyWindow(window);
     glfwTerminate();
 

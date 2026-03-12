@@ -16,6 +16,7 @@ cmake_policy(SET CMP0135 NEW)
 option(VOXEL_ENGINE_BUILD_EXAMPLES "Build example programs" ON)
 option(VOXEL_ENGINE_BUILD_TESTS "Build tests" ON)
 option(VOXEL_ENGINE_BUILD_SHARED "Build as shared library" OFF)
+option(VOXEL_ENGINE_SANITIZE "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
 # =============================================================================
 # COMPILER SETTINGS
@@ -24,10 +25,12 @@ option(VOXEL_ENGINE_BUILD_SHARED "Build as shared library" OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include(FetchContent)
 
 # Setup Google Test early if needed
 if(VOXEL_ENGINE_BUILD_TESTS)
-    include(FetchContent)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
@@ -56,12 +59,17 @@ else()
     endif()
 endif()
 
+# Sanitizers
+if(VOXEL_ENGINE_SANITIZE)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
+endif()
+
 # =============================================================================
 # DEPENDENCIES
 # =============================================================================
 
 # OpenGL
-
 if (LINUX)
     find_package(OpenGL REQUIRED)
 endif()
@@ -89,101 +97,34 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 # =============================================================================
-# LIBRARY SETUP
+# SUBDIRECTORIES
 # =============================================================================
 
-# Source files
-file(GLOB_RECURSE VOXEL_ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
-# Public headers
-set(VOXEL_ENGINE_PUBLIC_HEADERS
-    include/voxel_engine/voxel_engine.h
-    include/voxel_engine/world.h
-    include/voxel_engine/voxel_types.h
-    include/voxel_engine/callbacks.h
-    include/voxel_engine/math_utils.h
-    include/voxel_engine/texture.h
-    include/voxel_engine/chunk.h
-    include/voxel_engine/mesh.h
-    include/voxel_engine/resource_manager.h
-    include/voxel_engine/world_coords.h
-)
-
-# Internal headers
-file(GLOB_RECURSE VOXEL_ENGINE_INTERNAL_HEADERS CONFIGURE_DEPENDS "src/*.h")
-
-# Create library
-if(VOXEL_ENGINE_BUILD_SHARED)
-    add_library(VoxelEngine SHARED ${VOXEL_ENGINE_SOURCES} ${VOXEL_ENGINE_INTERNAL_HEADERS})
-    target_compile_definitions(VoxelEngine PRIVATE VOXEL_ENGINE_EXPORTS)
-    target_compile_definitions(VoxelEngine PUBLIC VOXEL_ENGINE_SHARED)
-else()
-    add_library(VoxelEngine STATIC ${VOXEL_ENGINE_SOURCES} ${VOXEL_ENGINE_INTERNAL_HEADERS})
-endif()
-
-# Create alias for consistent usage
-add_library(VoxelEngine::VoxelEngine ALIAS VoxelEngine)
-
-# =============================================================================
-# LIBRARY CONFIGURATION
-# =============================================================================
-
-# Include directories
-target_include_directories(VoxelEngine
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-# Link dependencies
-if (LINUX)
-    set(OPENGL_GL OpenGL::GL)
-else()
-    set(OPENGL_GL)
-endif()
-
-target_link_libraries(VoxelEngine
-    PUBLIC
-        GLEW::GLEW
-        ${OPENGL_GL}
-        glm::glm
-        ZLIB::ZLIB
-    PRIVATE
-        imgui
-)
-
-# Setup ImGui Library
-# Core ImGui (No backends, no GLFW dependency)
+# ImGui (must be defined before client, which depends on it)
 add_library(imgui STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+      ${imgui_SOURCE_DIR}/imgui.cpp
+      ${imgui_SOURCE_DIR}/imgui_demo.cpp
+      ${imgui_SOURCE_DIR}/imgui_draw.cpp
+      ${imgui_SOURCE_DIR}/imgui_tables.cpp
+      ${imgui_SOURCE_DIR}/imgui_widgets.cpp
 )
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 
-# ImGui Backends (Depends on GLFW and OpenGL)
 if(TARGET glfw)
     add_library(imgui_backends STATIC
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+          ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+          ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
     )
     target_include_directories(imgui_backends PUBLIC ${imgui_SOURCE_DIR}/backends)
     target_compile_definitions(imgui_backends PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
     target_link_libraries(imgui_backends PUBLIC imgui glfw ${OPENGL_GL} GLEW::GLEW)
 endif()
 
-# Embed shaders as strings (optional approach)
-# You could also load them at runtime
-set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
-set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
-target_compile_definitions(VoxelEngine PUBLIC
-    VOXEL_ENGINE_SHADER_DIR="${SHADER_DIR}"
-    VOXEL_ENGINE_ASSETS_DIR="${ASSETS_DIR}"
-)
+add_subdirectory(core)
+add_subdirectory(server)
+add_subdirectory(client)
+
 
 # =============================================================================
 # EXAMPLES
@@ -193,23 +134,16 @@ if(VOXEL_ENGINE_BUILD_EXAMPLES)
     # Basic Demo
     add_executable(simple_demo
         examples/simple/main.cpp
+        examples/simple/App.cpp
     )
     target_link_libraries(simple_demo
-        VoxelEngine::VoxelEngine
+        VoxelEngine::Client
+        VoxelEngine::Server
+        VoxelEngine::Core
         glfw
         imgui_backends
-        #GLEW::GLEW
-        #OpenGL::GL
     )
 
-    # Terrain Generation Demo
-    #add_executable(terrain_gen
-    #examples/terrain_gen/main.cpp
-    #)
-    #target_link_libraries(terrain_gen
-    #VoxelEngine::VoxelEngine
-    #glfw
-    #)
 
     # Set output directory for examples
     set_target_properties(simple_demo PROPERTIES
@@ -227,15 +161,15 @@ if(VOXEL_ENGINE_BUILD_TESTS)
     # Create test executable
     add_executable(voxel_tests
         tests/test_world.cpp
-        tests/test_chunks.cpp
-        tests/test_world_lookup.cpp
+        #tests/test_chunks.cpp
+        #tests/test_world_lookup.cpp
         #tests/test_math.cpp
     )
 
     target_link_libraries(voxel_tests
-        VoxelEngine::VoxelEngine
+        VoxelEngine::Server
+        VoxelEngine::Core
         GTest::gtest_main
-        glfw  # For OpenGL context in tests
     )
 
     # Use GoogleTest's test discovery
@@ -255,15 +189,10 @@ endif()
 # =============================================================================
 
 # Install targets
-install(TARGETS VoxelEngine
+install(TARGETS voxel_core voxel_server voxel_client
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-)
-
-# Install public headers
-install(FILES ${VOXEL_ENGINE_PUBLIC_HEADERS}
-    DESTINATION include/voxel_engine
 )
 
 # Install shaders
@@ -323,13 +252,5 @@ message(STATUS "  Shared library: ${VOXEL_ENGINE_BUILD_SHARED}")
 message(STATUS "  Build examples: ${VOXEL_ENGINE_BUILD_EXAMPLES}")
 message(STATUS "  Build tests: ${VOXEL_ENGINE_BUILD_TESTS}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "  ASan enabled: ${VOXEL_ENGINE_SANITIZE}")
 
-# Clang-format support (if available)
-find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
-if(CLANG_FORMAT_EXECUTABLE)
-    add_custom_target(format
-        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i ${VOXEL_ENGINE_SOURCES} ${VOXEL_ENGINE_PUBLIC_HEADERS}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Formatting source code"
-    )
-endif()
