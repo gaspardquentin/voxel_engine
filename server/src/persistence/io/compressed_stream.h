@@ -62,7 +62,7 @@ public:
     }
 
     void readString(std::string& out) {
-        uint16_t len;
+        uint16_t len = 0;
         read(len);
         if (m_cursor + len > m_buffer.size()) {
             std::cerr << "CompressedFileReader: attempt to read string past end of buffer.\n";
@@ -77,6 +77,5 @@ public:
     void clear();
 };
 
-} // namespace io
-} // namespace voxeng::server
-
+}
+}

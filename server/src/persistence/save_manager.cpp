@@ -65,13 +65,15 @@ public:
 
         if (m_metadata.format_sub_version >= 1) {
             // Voxel types (TODO: again, maybe separate into a submethod)
-            uint16_t num_types;
+            uint16_t num_types = 0;
             reader.read(num_types);
             m_metadata.voxel_types.clear();
             for (uint16_t i = 0; i < num_types; ++i) {
-                VoxelID id;
-                std::string name, texture;
-                uint8_t solid, transparent;
+                VoxelID id = 0;
+                std::string name = "";
+                std::string texture = "";
+                uint8_t solid = 0;
+                uint8_t transparent = 0;
                 reader.read(id);
                 reader.readString(name);
                 reader.readString(texture);
@@ -81,12 +83,12 @@ public:
             }
 
             // Players data (TODO: again, maybe separate into a submethod)
-            uint32_t num_players;
+            uint32_t num_players = 0;
             reader.read(num_players);
             m_metadata.known_players.clear();
             for (uint32_t i = 0; i < num_players; i++) {
-                UserID uid;
-                WorldCoord pos;
+                UserID uid = 0;
+                WorldCoord pos = {0.0f, 0.0f, 0.0f};
                 reader.read(uid);
                 reader.read(pos.x);
                 reader.read(pos.y);

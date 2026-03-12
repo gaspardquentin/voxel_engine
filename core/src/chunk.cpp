@@ -93,7 +93,7 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     // Basic terrain generation
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
         for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
-            int ground_height = CHUNK_HEIGHT / 2;
+            unsigned int ground_height = CHUNK_HEIGHT / 2;
             
             for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
                 if (y < ground_height - 2) {

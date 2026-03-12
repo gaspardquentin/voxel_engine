@@ -9,7 +9,7 @@ class GUILayer {
 public:
     void drawDebugUI(Client& client, float fps);
     void drawStartMenuUI(Client& client);
-    void drawChatUI(Client& client, std::string username);
+    void drawChatUI(Client& client);
 
 private:
     char m_world_name_buf[128] = "my_world";

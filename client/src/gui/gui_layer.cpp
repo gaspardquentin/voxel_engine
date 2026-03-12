@@ -84,7 +84,7 @@ void GUILayer::drawStartMenuUI(Client& client) {
     ImGui::End();
 }
 
-void voxeng::client::GUILayer::drawChatUI(Client& client, std::string username) {
+void voxeng::client::GUILayer::drawChatUI(Client& client) {
     ImGui::SetNextWindowPos(ImVec2(10, 1500), ImGuiCond_Appearing);
     if (ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         for (const voxeng::Message& msg : client.getAllMessages()) {

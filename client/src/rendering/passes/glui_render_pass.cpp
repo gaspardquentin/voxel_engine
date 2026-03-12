@@ -8,7 +8,7 @@ GLUIRenderPass::GLUIRenderPass(const Shader& shader): m_shader_prog(shader) {
     m_crosshair_mesh.upload(m_ui_mesh_builder.buildCrosshair());
 }
 
-void GLUIRenderPass::render(const Camera& camera) {
+void GLUIRenderPass::render(const Camera&) {
     glDisable(GL_DEPTH_TEST);
     m_shader_prog.bind();
 
@@ -18,4 +18,4 @@ void GLUIRenderPass::render(const Camera& camera) {
     glEnable(GL_DEPTH_TEST);
 }
 
-} // namespace voxeng::client
+}

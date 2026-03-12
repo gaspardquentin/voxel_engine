@@ -53,7 +53,7 @@ Server::~Server() {
     }
 }
 
-void Server::update(float delta_time) {
+void Server::update([[maybe_unused]] float delta_time) {
     auto current_time = std::chrono::steady_clock::now();
     if (current_time - m_impl->m_previous_tick < TICK_DURATION) {
         return;
@@ -113,7 +113,7 @@ void Server::handleRequest(const network::LoadWorldRequest& req) {
     m_impl->m_world->setSaveManager(&m_impl->m_save_manager);
 }
 
-void Server::handleRequest(const network::SaveWorldRequest& req) {
+void Server::handleRequest(const network::SaveWorldRequest&) {
     if (!isWorldLoaded()) return;
     m_impl->m_world->flushAllDirtyChunks();
 }
@@ -144,9 +144,9 @@ void Server::handleRequest(const network::JoinWorldRequest& req) {
 
 }
 
-void Server::handleRequest(const network::ListWorldsRequest& req) {
+void Server::handleRequest(const network::ListWorldsRequest&) {
     network::ListWorldsEvent evt{};
-    for (const std::string path : m_impl->m_save_manager.listWorlds()) {
+    for (const std::string& path : m_impl->m_save_manager.listWorlds()) {
         evt.paths.push_back(path);
     }
     m_impl->m_connection.pushEvent(evt);

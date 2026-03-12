@@ -27,7 +27,7 @@ voxeng::client::Client *gClient = nullptr; //global ponter needed for callbacks
 App *gApp = nullptr;
 
 
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+void mouse_callback(GLFWwindow*, double xposIn, double yposIn) {
     if (gApp == nullptr || gApp->isPaused()) {
         return;
     }
@@ -51,7 +51,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     }
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+void scroll_callback(GLFWwindow*, double, double yoffset) {
     if (gClient != nullptr) {
         gClient->zoomCamera(static_cast<float>(yoffset));
     }
@@ -64,7 +64,7 @@ int maxVoxel = 10; //TODO: maybe get this from a getter
 int maxReach = 3;
 
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+void mouse_button_callback(GLFWwindow*, int button, int action, int) {
     if (gClient == nullptr) {
         return;
     }
@@ -257,7 +257,7 @@ int main() {
             case GAME:
             case PAUSE:
                 engine_gui.drawDebugUI(client, currentFps);
-                engine_gui.drawChatUI(client, username);
+                engine_gui.drawChatUI(client);
                 break;
         }
 
