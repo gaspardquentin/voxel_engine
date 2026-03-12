@@ -1,10 +1,11 @@
 #include "voxel_engine/server/server.h"
 #include "voxel_engine/math_utils.h"
+#include "voxel_engine/message.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/server_request.h"
 #include "voxel_engine/save_format.h"
 #include "voxel_engine/server/chat.h"
-#include "voxel_engine/server/command_registry.h"
+#include "voxel_engine/server/commands.h"
 #include "voxel_engine/server/network/local_server_connection.h"
 #include "voxel_engine/server/save_manager.h"
 #include "voxel_engine/server/world.h"
@@ -12,8 +13,10 @@
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/world_coords.h"
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <variant>
 
@@ -34,7 +37,9 @@ public:
     std::chrono::time_point<std::chrono::steady_clock> m_previous_tick = std::chrono::steady_clock::now();
 
     Impl(network::IServerConnection& connection):
-        m_connection(connection) {}
+        m_connection(connection) {
+        registerDefaultCommands(m_command_registry);
+    }
 
     ~Impl() = default;
 };
@@ -129,7 +134,13 @@ void Server::handleRequest(const network::JoinWorldRequest& req) {
     };
     m_impl->m_connection.pushEvent(world_evt);
 
-    m_impl->m_world->updateChunks(req.player_position);
+    // Send chat history to newly joined player
+    auto messages = m_impl->m_chat.getAllMessages();
+    if (!messages.empty()) {
+        m_impl->m_connection.pushEvent(network::ChatHistoryEvent{std::move(messages)});
+    }
+
+    m_impl->m_world->updateChunks(world_evt.spawn_pos);
 
 }
 
@@ -139,6 +150,36 @@ void Server::handleRequest(const network::ListWorldsRequest& req) {
         evt.paths.push_back(path);
     }
     m_impl->m_connection.pushEvent(evt);
+}
+
+
+void Server::handleRequest(const network::SendChatRequest& req) {
+    if (!isWorldLoaded() || req.content.empty()) {
+        return;
+    }
+
+    //TODO: maybe here add a ban word list (or in Chat.cpp)
+
+    if (req.content[0] == '/') {
+        CommandContext ctx {
+            *m_impl->m_world,
+            [this](const std::string& message) {
+                m_impl->m_connection.pushEvent(network::ServerErrorEvent{"CommandError", message});
+            }
+        };
+        bool ok = m_impl->m_command_registry.tryExecute(req.content, ctx);
+        if (!ok) {
+            m_impl->m_connection.pushEvent(network::ServerErrorEvent{"CommandError", "Unknown command."});
+        }
+        return;
+    }
+
+    m_impl->m_chat.sendMessage(req.user, req.content);
+
+    // Broadcast the new message to all clients
+    m_impl->m_connection.pushEvent(network::ChatMessageEvent{
+        {req.user, req.content, std::chrono::system_clock::now()}
+    });
 }
 
 void Server::saveAndCloseWorld() {

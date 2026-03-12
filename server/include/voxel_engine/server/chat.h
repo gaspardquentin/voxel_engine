@@ -1,36 +1,18 @@
 #pragma once
 
-#include <iomanip>
+#include "voxel_engine/message.h"
+#include "voxel_engine/user.h"
 #include <memory>
-#include <sstream>
 #include <string>
-#include <vector>
-#include <chrono>
 
 namespace voxeng::server {
-
-struct Message {
-    std::string sender_id;
-    std::string content;
-    std::chrono::system_clock::time_point timestamp;
-
-    std::string getFormattedTime() const {
-        auto t = std::chrono::system_clock::to_time_t(timestamp);
-        std::tm* tm = std::localtime(&t);
-
-        std::ostringstream oss;
-        oss << std::put_time(tm, "%H:%M:%S");
-
-        return oss.str();
-    }
-};
 
 class Chat {
 public:
     Chat(size_t history_length);
     ~Chat();
 
-    void sendMessage(std::string sender_id, std::string content);
+    void sendMessage(UserProfile sender, std::string content);
 
     std::vector<Message> getAllMessages() const;
     std::vector<Message> getRecentMessages(size_t count) const;

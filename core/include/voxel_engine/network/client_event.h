@@ -3,7 +3,9 @@
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
+#include "voxel_engine/message.h"
 #include "voxel_engine/voxel_types.h"
+#include <chrono>
 #include <variant>
 #include <vector>
 
@@ -41,6 +43,7 @@ struct VoxelChangedEvent {
 struct ServerErrorEvent {
     std::string kind;
     std::string message;
+    std::chrono::system_clock::time_point timestamp = std::chrono::system_clock::now();
 };
 
 // receives the list of worlds paths
@@ -52,6 +55,16 @@ struct NewWorldCreatedEvent {
     std::string path;
 };
 
+// Single message broadcast (pushed on each new message)
+struct ChatMessageEvent {
+    Message message;
+};
+
+// Batch of messages sent once on world join
+struct ChatHistoryEvent {
+    std::vector<Message> messages;
+};
+
 using ClientEvent = std::variant<
     WorldLoadEvent,
     ChunkDataEvent,
@@ -59,7 +72,9 @@ using ClientEvent = std::variant<
     ServerErrorEvent,
     ListWorldsEvent,
     NewWorldCreatedEvent,
-    VoxelChangedEvent
+    VoxelChangedEvent,
+    ChatMessageEvent,
+    ChatHistoryEvent
 >;
 
 }

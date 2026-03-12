@@ -1,6 +1,5 @@
 #pragma once
 
-#include "voxel_engine/server/chat.h"
 #include "voxel_engine/server/world.h"
 #include <algorithm>
 #include <stdexcept>
@@ -15,8 +14,8 @@
 namespace voxeng::server {
 
 struct CommandContext {
-    Chat& chat;
     World& world;
+    std::function<void(const std::string& message)> error;
 };
 
 using CommandHandler = std::function<void(const std::vector<std::string>& args, CommandContext& ctx)>;

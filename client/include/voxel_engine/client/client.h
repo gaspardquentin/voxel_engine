@@ -2,6 +2,7 @@
 
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/client/camera.h"
+#include "voxel_engine/message.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_client_connection.h"
 #include "voxel_engine/user.h"
@@ -60,8 +61,6 @@ public:
     void setRenderDistance(uint8_t render_distance);
     uint8_t getRenderDistance() const;
 
-    //const Camera& getCamera() const; TODO: maybe remove this
-
     WorldCoord getPlayerPos() const;
 
     /* Input/Action handling */
@@ -72,7 +71,10 @@ public:
     void placeVoxel(uint8_t max_reach, VoxelID voxel);
     void removeVoxel(uint8_t max_reach);
 
-    void sendChatMessage(const std::string& sender_id, const std::string& content);
+    void sendChatMessage(const std::string& content);
+    std::vector<Message> getAllMessages() const;
+    std::vector<Message> getRecentMessages(size_t count) const;
+
     void createWorld(const std::string& name);
     void loadWorld(const std::string& world_path);
     void saveWorld();
@@ -99,6 +101,8 @@ public:
     void handleEvent(const network::NewWorldCreatedEvent& event);
     void handleEvent(const network::ServerErrorEvent& event);
     void handleEvent(const network::VoxelChangedEvent& event);
+    void handleEvent(const network::ChatMessageEvent& event);
+    void handleEvent(const network::ChatHistoryEvent& event);
 
     void render();
     void update();

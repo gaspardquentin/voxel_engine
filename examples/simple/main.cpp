@@ -193,6 +193,7 @@ int main() {
     voxeng::network::LocalClientConnection client_connection{local_transport};
 
     voxeng::client::Client client{client_conf, client_connection}; //TODO: maybe separate engine from renderer
+    client.setUsername("you");
     voxeng::server::Server server{server_connection};
     App app{window};
     gClient = &client;

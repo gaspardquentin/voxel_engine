@@ -33,6 +33,7 @@ public:
     void handleRequest(const network::SaveWorldRequest& req);
     void handleRequest(const network::JoinWorldRequest& req);
     void handleRequest(const network::ListWorldsRequest& req);
+    void handleRequest(const network::SendChatRequest& req);
 
     void saveAndCloseWorld();
     bool isWorldLoaded() const;

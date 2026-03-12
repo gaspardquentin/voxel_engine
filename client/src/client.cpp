@@ -6,6 +6,8 @@
 #include "rendering/passes/glworld_render_pass.h"
 #include "rendering/passes/gl_entity_render_pass.h"
 #include "rendering/render_pipeline.h"
+#include "voxel_engine/chat_history.h"
+#include "voxel_engine/message.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_client_connection.h"
 #include "voxel_engine/network/server_request.h"
@@ -38,6 +40,7 @@ public:
     UserProfile m_user;
     bool m_position_dirty = false;
     std::chrono::time_point<std::chrono::steady_clock> m_previous_tick = std::chrono::steady_clock::now();
+    ChatHistory m_chat_history{256};
     //GUILayer m_gui_layer;
     //GLFWwindow *m_window; //TODO: remove hard-coded dependency
 
@@ -152,12 +155,6 @@ uint8_t Client::getRenderDistance() const {
     return m_impl->m_render_distance;
 }
 
-/* TODO: surely remove this (don't like the idea to give implem details)
-const Camera& Client::getCamera() const {
-    return m_impl->m_camera;
-}
-*/
-
 WorldCoord Client::getPlayerPos() const {
     if (!m_impl->m_camera.has_value()) {
         return {0.0f, 0.0f, 0.0f};
@@ -200,8 +197,26 @@ void Client::removeVoxel(uint8_t max_reach) {
     m_impl->playerSetVoxel(max_reach, 0); // 0 since AIR = 0 as convention in this codebase
 }
 
-void Client::sendChatMessage(const std::string& sender_id, const std::string& content) {
-    //TODO: implement this
+void Client::sendChatMessage(const std::string& content) {
+    if (content.empty() || !m_impl->m_world.has_value()) {
+        return;
+    }
+
+    m_impl->m_connection.pushRequest(network::SendChatRequest{
+        m_impl->m_user,
+        content
+    });
+}
+
+std::vector<Message> Client::getAllMessages() const {
+    return m_impl->m_chat_history.getAllMessages();
+}
+
+std::vector<Message> Client::getRecentMessages(size_t count) const {
+    if (count > m_impl->m_chat_history.size()) {
+        return m_impl->m_chat_history.getAllMessages();
+    }
+    return m_impl->m_chat_history.getNLastMessages(count);
 }
 
 void Client::createWorld(const std::string& name) {
@@ -294,12 +309,22 @@ void Client::handleEvent(const network::NewWorldCreatedEvent& event) {
 }
 
 void Client::handleEvent(const network::ServerErrorEvent& event) {
-    //TODO: implement this
+    m_impl->m_chat_history.pushMessage(Message{{0, "error"}, event.kind + ": " + event.message, event.timestamp});
 }
 
 void Client::handleEvent(const network::VoxelChangedEvent& event) {
     if (m_impl->m_world.has_value()) {
         m_impl->m_world->setVoxel(event.chunk_id, event.chunk_pos, event.new_voxel);
+    }
+}
+
+void Client::handleEvent(const network::ChatMessageEvent& event) {
+    m_impl->m_chat_history.pushMessage(Message{event.message});
+}
+
+void Client::handleEvent(const network::ChatHistoryEvent& event) {
+    for (const auto& msg : event.messages) {
+        m_impl->m_chat_history.pushMessage(Message{msg});
     }
 }
 

@@ -49,7 +49,12 @@ struct JoinWorldRequest {
     // std::string world_name or maybe an idea ; TODO: maybe use this when/if we implement multiverses
     UserProfile user;
     uint8_t render_distance;
-    WorldCoord player_position = {0.0f, 0.0f, 0.0f}; // TODO: remove this and use the server spawnpoint or saved user pos
+};
+
+
+struct SendChatRequest {
+    UserProfile user;
+    std::string content;
 };
 
 using ServerRequest = std::variant<
@@ -59,7 +64,8 @@ using ServerRequest = std::variant<
     LoadWorldRequest,
     SaveWorldRequest,
     ListWorldsRequest,
-    JoinWorldRequest
+    JoinWorldRequest,
+    SendChatRequest
 >;
 
 }

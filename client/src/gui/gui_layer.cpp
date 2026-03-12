@@ -1,4 +1,5 @@
 #include "voxel_engine/client/gui_layer.h"
+#include "voxel_engine/message.h"
 
 #include <imgui.h>
 #include <filesystem>
@@ -84,11 +85,10 @@ void GUILayer::drawStartMenuUI(Client& client) {
 }
 
 void voxeng::client::GUILayer::drawChatUI(Client& client, std::string username) {
-    /* TODO: make it work on client/server arch
     ImGui::SetNextWindowPos(ImVec2(10, 1500), ImGuiCond_Appearing);
     if (ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        for (const Message& msg : engine.getChat().getAllMessages()) {
-            ImGui::Text("[%s][%s] %s", msg.sender_id.c_str(), msg.getFormattedTime().c_str(), msg.content.c_str());
+        for (const voxeng::Message& msg : client.getAllMessages()) {
+            ImGui::Text("[%s][%s] %s", msg.sender.username.c_str(), msg.getFormattedTime().c_str(), msg.content.c_str());
         }
 
         bool send = ImGui::InputTextWithHint("##chat_input", "Type a message or /command...",
@@ -97,12 +97,11 @@ void voxeng::client::GUILayer::drawChatUI(Client& client, std::string username) 
         send |= ImGui::Button("Send");
 
         if (send && m_chat_input_buf[0] != '\0') {
-            engine.handleChatInput(username, std::string(m_chat_input_buf));
+            client.sendChatMessage(std::string(m_chat_input_buf));
             m_chat_input_buf[0] = '\0';
         }
     }
     ImGui::End();
-    */
 }
 
 }
