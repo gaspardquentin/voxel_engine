@@ -20,4 +20,4 @@ public:
     std::shared_ptr<T> get(const std::string& file_path);
 };
 
-} // namespace voxeng::client
+}

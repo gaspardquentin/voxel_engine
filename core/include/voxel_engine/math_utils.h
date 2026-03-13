@@ -113,10 +113,6 @@ struct Vec2T {
 using Vec2 = Vec2T<float>;
 using Vec2f = Vec2T<float>;
 using Vec2i = Vec2T<int>;
-//Note: doing this limits the amount of chunks of the engine, but this might be 
-//enough and makes the hashing function more efficient
-//This might change in the future.
-using ChunkID = Vec2T<int32_t>;
 
 
 
@@ -239,17 +235,8 @@ using Vec3u = Vec3T<unsigned int>;
 using ObjVertexIndex = Vec3T<int>;
 
 
-// Hash for the chunk id type (needed to store the chunks in the unordered map 
-// accessed by their id)
-// And Hash needed for the de-duplication algorithm in the obj file parsing
+// Hash needed for the de-duplication algorithm in the obj file parsing
 namespace std {
-    template<>
-    struct hash<ChunkID> {
-        size_t operator()(const ChunkID& chunk_id) const noexcept {
-            return (static_cast<uint64_t>(static_cast<uint32_t>(chunk_id.x)) << 32) | static_cast<uint32_t>(chunk_id.y);
-        }
-    };
-
     template<>
     struct hash<ObjVertexIndex> {
         size_t operator()(const ObjVertexIndex& k) const {

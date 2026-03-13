@@ -2,6 +2,7 @@
 
 #include "voxel_engine/server/command_registry.h"
 #include "voxel_engine/math_utils.h"
+#include "voxel_engine/server/entity_components.h"
 #include "voxel_engine/voxel_types.h"
 #include <iostream>
 
@@ -13,6 +14,18 @@ inline CommandHandler console_log = [](const std::vector<std::string>& args, Com
         std::cout << s << " ";
     }
     std::cout << std::endl;
+};
+
+inline CommandHandler cow = [](const std::vector<std::string>&, CommandContext& ctx) {
+    //TODO: replace this hardcoded positions with the current player pos
+    auto cow = ctx.world.spawnEntity("cow", {0.0f, 15.0f, 0.0f});
+    ctx.world.getRegistry().emplace<Velocity>(cow, Velocity{{10.0f, 0.0f, 0.0f}});
+};
+
+
+inline CommandHandler teapot = [](const std::vector<std::string>&, CommandContext& ctx) {
+    //TODO: replace this hardcoded positions with the current player pos
+    ctx.world.spawnEntity("teapot", {20.0f, 12.0f, 20.0f});
 };
 
 inline CommandHandler fill = [](const std::vector<std::string>& args, CommandContext& ctx) {
@@ -61,6 +74,8 @@ inline CommandHandler fill = [](const std::vector<std::string>& args, CommandCon
 inline void registerDefaultCommands(CommandRegistry& registry) {
     registry.registerCommand("/clg", console_log);
     registry.registerCommand("/fill", fill);
+    registry.registerCommand("/cow", cow);
+    registry.registerCommand("/teapot", teapot);
 }
 
 }

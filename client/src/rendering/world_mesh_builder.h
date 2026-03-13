@@ -17,5 +17,5 @@ public:
   MeshData buildMesh(const voxeng::Chunk& chunk) const;
 };
 
-} // namespace voxeng::client
+}
 

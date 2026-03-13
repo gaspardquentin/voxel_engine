@@ -88,6 +88,15 @@ find_package(glm REQUIRED)
 # ZLIB for compression
 find_package(ZLIB REQUIRED)
 
+# EnTT for Entity Component System (server-side)
+FetchContent_Declare(
+    EnTT
+    GIT_REPOSITORY https://github.com/skypjack/entt
+    GIT_TAG v3.14.0
+)
+FetchContent_MakeAvailable(EnTT)
+target_compile_options(EnTT INTERFACE -Wno-ignored-qualifiers)
+
 # ImGui
 FetchContent_Declare(
     imgui

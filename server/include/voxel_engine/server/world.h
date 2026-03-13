@@ -5,6 +5,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include "entt/entity/fwd.hpp"
+#include "entt/entity/registry.hpp"
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/chunk.h"
@@ -49,6 +51,10 @@ public:
     void update();
     void setSeed(uint64_t seed);
     uint64_t getSeed() const;
+
+    entt::registry& getRegistry();
+    const entt::registry& getRegistry() const;
+    entt::entity spawnEntity(std::string model_name, WorldCoord spawn_pos);
 
     void updateChunks(WorldCoord pos);
 

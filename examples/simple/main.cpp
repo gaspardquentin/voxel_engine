@@ -80,6 +80,7 @@ void mouse_button_callback(GLFWwindow*, int button, int action, int) {
 void processInput(GLFWwindow *window, App& app, voxeng::client::Client& client, float deltaTime) {
     static bool eWasDown = false;
     static bool escapeWasDown = false;
+    static bool ctrlWasDown = false;
 
     if (!app.isPaused()) {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -118,6 +119,14 @@ void processInput(GLFWwindow *window, App& app, voxeng::client::Client& client, 
         }
     }
     eWasDown = eIsDown;
+
+    // L-CTRL key event (increased user speed)
+    bool ctrlIsDown = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+    if (ctrlIsDown && !ctrlWasDown) {
+        app.toggleIncreasedSpeed(client);
+    }
+    ctrlWasDown = ctrlIsDown;
+
 }
 
 

@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-#include "math_utils.h"
+#include "types.h"
 #include "voxel_types.h"
 
 //TODO: better config approach (maybe chunk size in world attribute)
@@ -11,8 +11,6 @@
 #define CHUNK_HEIGHT 16
 #define CHUNK_DEPTH 16 //TODO: are we really using it ?
 #define CHUNK_SIZE (CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH)
-
-using ChunkCoord = Vec3u;
 
 namespace voxeng {
 

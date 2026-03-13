@@ -54,7 +54,7 @@ void GLWorldRenderPass::render(const Camera& camera) {
         mesh->draw();
     }
 
-    // Remove stale mesh entries for unloaded chunks (throttled to once per second)
+    // Remove stale mesh entries for unloaded chunks (once per second)
     auto now = std::chrono::steady_clock::now();
     if (now - m_last_cleanup >= std::chrono::seconds(1)) {
         m_last_cleanup = now;

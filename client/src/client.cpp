@@ -64,7 +64,7 @@ public:
         m_render_pipeline.addPass<GLUIRenderPass>(
             *(m_shader_manager.get("ui")));
 
-        m_render_pipeline.addPass<GLEntityRenderPass>(*(m_shader_manager.get("entity")));
+        m_render_pipeline.addPass<GLEntityRenderPass>(*(m_shader_manager.get("entity")), m_world);
     }
 
     UserProfile loadProfile() {
@@ -179,6 +179,15 @@ void Client::zoomCamera(float yoffset) {
         return;
     }
     m_impl->m_camera->processZoom(yoffset);
+}
+
+
+void Client::setPlayerSpeed(float speed) {
+    m_impl->m_camera->setMovementSpeed(speed);
+}
+
+float Client::getPlayerSpeed() const {
+    return m_impl->m_camera->getMovementSpeed();
 }
 
 void Client::movePlayer(Movement mov, float delta_time) {
@@ -329,6 +338,38 @@ void Client::handleEvent(const network::ChatHistoryEvent& event) {
 }
 
 
+void Client::handleEvent(const network::EntitySpawnEvent& event) {
+    if (!m_impl->m_world.has_value()) {
+        return;
+    }
+
+    //TODO: maybe here add rotation
+    m_impl->m_world->spawnEntity(event.entity_id, RenderEntity{
+        event.model_name,
+        event.position
+    });
+}
+
+void Client::handleEvent(const network::EntityUpdateEvent& event) {
+    if (!m_impl->m_world.has_value()) {
+        return;
+    }
+
+    //TODO: handle different kind of update events
+
+    RenderEntity *ent = m_impl->m_world->getEntity(event.entity_id);
+    ent->position = event.position;
+}
+
+void Client::handleEvent(const network::EntityDespawnEvent& event) {
+    if (!m_impl->m_world.has_value()) {
+        return;
+    }
+
+    m_impl->m_world->despawnEntity(event.entity_id);
+}
+
+
 void Client::render() {
     if (!m_impl->m_camera.has_value()) {
         m_impl->m_render_pipeline.render();
@@ -342,6 +383,7 @@ void Client::update() {
     if (current_time - m_impl->m_previous_tick < TICK_DURATION) {
         return;
     }
+    m_impl->m_previous_tick = current_time;
 
     if (m_impl->m_position_dirty && m_impl->m_camera.has_value()) {
         m_impl->m_connection.pushRequest(network::PlayerPositionRequest {

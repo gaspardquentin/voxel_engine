@@ -21,6 +21,27 @@ void ClientWorld::unloadChunk(ChunkID id) {
     m_chunks.erase(id);
 }
 
+
+//TODO: maybe add error handling here
+
+void ClientWorld::spawnEntity(EntityID id, RenderEntity entity) {
+    m_entities.insert({id, std::move(entity)});
+}
+
+void ClientWorld::despawnEntity(EntityID id) {
+    m_entities.erase(id);
+}
+
+RenderEntity *ClientWorld::getEntity(EntityID id) {
+    return &m_entities.at(id);
+}
+
+const std::unordered_map<EntityID, RenderEntity>& ClientWorld::getEntities() const {
+    return m_entities;
+}
+
+
+
 const std::unordered_map<ChunkID, Chunk>& ClientWorld::getChunks() const {
     return m_chunks;
 }

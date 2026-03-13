@@ -1,10 +1,13 @@
 #include "voxel_engine/server/world.h"
+#include "entt/entity/fwd.hpp"
 #include "voxel_engine/callbacks.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_server_connection.h"
 #include "voxel_engine/save_format.h"
+#include "voxel_engine/server/entity_components.h"
 #include "voxel_engine/server/save_manager.h"
+#include "voxel_engine/types.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/world_coords.h"
 #include <algorithm>
@@ -12,6 +15,7 @@
 #include <cstdint>
 #include <iostream>
 #include <unordered_map>
+#include <entt/entt.hpp>
 
 using namespace voxeng;
 
@@ -26,6 +30,8 @@ public:
     uint8_t m_render_distance; //TODO: remove this from server world
     uint64_t m_seed;
     SaveManager* m_save_manager = nullptr;
+    entt::registry m_registry;
+
 
     Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint8_t render_distance, uint64_t seed, bool generate_chunks):
         m_connection(connection),
@@ -45,6 +51,7 @@ public:
     }
 
     void _preGenerateChunks(int render_distance, ChunkID start_chunk) {
+        m_to_generate.clear();
         for (int y = -render_distance; y <= render_distance; y++) {
             for (int x = -render_distance; x <= render_distance; x++) {
                 ChunkID cid = {start_chunk.x + x, start_chunk.y + y};
@@ -199,6 +206,28 @@ void World::setSeed(uint64_t seed) {
 
 uint64_t World::getSeed() const {
     return m_impl->m_seed;
+}
+
+entt::registry& World::getRegistry() {
+    return m_impl->m_registry;
+}
+const entt::registry& World::getRegistry() const {
+    return m_impl->m_registry;
+}
+
+entt::entity World::spawnEntity(std::string model_name, WorldCoord spawn_pos) {
+    auto ent = m_impl->m_registry.create();
+
+    m_impl->m_registry.emplace<Model>(ent, model_name);
+    m_impl->m_registry.emplace<Position>(ent, spawn_pos);
+
+    m_impl->m_connection.pushEvent(network::EntitySpawnEvent{
+        static_cast<EntityID>(ent),
+        model_name,
+        spawn_pos
+    });
+
+    return ent;
 }
 
 void World::updateChunks(WorldCoord pos) {

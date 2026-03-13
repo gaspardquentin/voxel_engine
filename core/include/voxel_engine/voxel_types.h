@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
-using VoxelID = uint8_t;
+#include "types.h"
 
 namespace voxeng {
 

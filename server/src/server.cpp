@@ -9,14 +9,17 @@
 #include "voxel_engine/server/network/local_server_connection.h"
 #include "voxel_engine/server/save_manager.h"
 #include "voxel_engine/server/world.h"
+#include "voxel_engine/types.h"
 #include "voxel_engine/user.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/world_coords.h"
+#include "voxel_engine/server/entity_systems.h"
 #include <algorithm>
 #include <chrono>
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <variant>
 
@@ -53,18 +56,42 @@ Server::~Server() {
     }
 }
 
-void Server::update([[maybe_unused]] float delta_time) {
+void Server::update(float delta_time) {
     auto current_time = std::chrono::steady_clock::now();
     if (current_time - m_impl->m_previous_tick < TICK_DURATION) {
         return;
     }
+    m_impl->m_previous_tick = current_time;
 
+    // Only process the latest position request to avoid redundant updateChunks calls
+    std::optional<network::PlayerPositionRequest> latest_position;
     while (auto req = m_impl->m_connection.pollRequest()) {
-        std::visit([this](auto&& r) { handleRequest(r); }, *req);
+        std::visit([this, &latest_position](auto&& r) {
+            using T = std::decay_t<decltype(r)>;
+            if constexpr (std::is_same_v<T, network::PlayerPositionRequest>) {
+                latest_position = r;
+            } else {
+                handleRequest(r);
+            }
+        }, *req);
+    }
+    if (latest_position) {
+        handleRequest(*latest_position);
     }
 
     if (m_impl->m_world) {
         m_impl->m_world->update();
+
+        auto& reg = m_impl->m_world->getRegistry();
+        movement_system::update(reg, delta_time);
+        //TODO: TODO: maybe separate into a sync method or something
+        auto view = m_impl->m_world->getRegistry().view<Position>();
+        for (auto [ent, pos]: view->each()) {
+            m_impl->m_connection.pushEvent(network::EntityUpdateEvent{
+                static_cast<EntityID>(ent),
+                pos.pos
+            });
+        }
     }
 }
 
@@ -94,15 +121,16 @@ void Server::handleRequest(const network::CreateWorldRequest& req) {
 }
 
 void Server::handleRequest(const network::LoadWorldRequest& req) {
+    if (isWorldLoaded()) {
+        saveAndCloseWorld();
+    }
+
     if (!m_impl->m_save_manager.openWorld(req.world_path)) {
         std::cerr << "<voxeng> Failed to open world: " << req.world_path << "\n";
         return;
     }
 
     const WorldMetadata& metadata = m_impl->m_save_manager.getMetadata();
-    if (isWorldLoaded()) {
-        saveAndCloseWorld();
-    }
     m_impl->m_world = std::make_unique<World>(
         m_impl->m_connection,
         metadata.voxel_types,
@@ -184,6 +212,11 @@ void Server::handleRequest(const network::SendChatRequest& req) {
 
 void Server::saveAndCloseWorld() {
     if (!isWorldLoaded()) return;
+
+    // Drain any pending requests (e.g. unprocessed voxel changes) before saving
+    while (auto req = m_impl->m_connection.pollRequest()) {
+        std::visit([this](auto&& r) { handleRequest(r); }, *req);
+    }
 
     m_impl->m_world->flushAllDirtyChunks();
 

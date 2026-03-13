@@ -4,8 +4,11 @@
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/message.h"
+#include "voxel_engine/types.h"
 #include "voxel_engine/voxel_types.h"
 #include <chrono>
+#include <cstdint>
+#include <sys/types.h>
 #include <variant>
 #include <vector>
 
@@ -65,6 +68,27 @@ struct ChatHistoryEvent {
     std::vector<Message> messages;
 };
 
+
+
+// Entities related events
+
+struct EntitySpawnEvent {
+    EntityID entity_id;
+    std::string model_name;
+    Vec3f position;
+    //TODO: maybe add rotation here
+};
+
+struct EntityUpdateEvent {
+    EntityID entity_id;
+    WorldCoord position;
+};
+
+
+struct EntityDespawnEvent {
+    EntityID entity_id;
+};
+
 using ClientEvent = std::variant<
     WorldLoadEvent,
     ChunkDataEvent,
@@ -74,7 +98,10 @@ using ClientEvent = std::variant<
     NewWorldCreatedEvent,
     VoxelChangedEvent,
     ChatMessageEvent,
-    ChatHistoryEvent
+    ChatHistoryEvent,
+    EntitySpawnEvent,
+    EntityUpdateEvent,
+    EntityDespawnEvent
 >;
 
 }

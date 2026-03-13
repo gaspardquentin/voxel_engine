@@ -84,6 +84,14 @@ public:
   }
   #endif
 
+  void setMovementSpeed(float movement_speed) {
+    m_movement_speed = movement_speed;
+  }
+
+  float getMovementSpeed() {
+    return m_movement_speed;
+  }
+
   void processMovement(Movement mov, float deltaTime) {
     float velocity = m_movement_speed * deltaTime;
     switch (mov) {

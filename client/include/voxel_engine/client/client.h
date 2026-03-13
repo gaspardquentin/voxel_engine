@@ -67,6 +67,9 @@ public:
     void moveCamera(float xoffset, float yoffset, bool constrain_pitch = true);
     void zoomCamera(float yoffset);
 
+    void setPlayerSpeed(float speed);
+    float getPlayerSpeed() const;
+
     void movePlayer(Movement mov, float delta_time);
     void placeVoxel(uint8_t max_reach, VoxelID voxel);
     void removeVoxel(uint8_t max_reach);
@@ -103,6 +106,9 @@ public:
     void handleEvent(const network::VoxelChangedEvent& event);
     void handleEvent(const network::ChatMessageEvent& event);
     void handleEvent(const network::ChatHistoryEvent& event);
+    void handleEvent(const network::EntitySpawnEvent& event);
+    void handleEvent(const network::EntityUpdateEvent& event);
+    void handleEvent(const network::EntityDespawnEvent& event);
 
     void render();
     void update();

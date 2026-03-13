@@ -20,4 +20,5 @@ target_link_libraries(voxel_server
     PUBLIC
         VoxelEngine::Core
         ZLIB::ZLIB
+        EnTT::EnTT
 )

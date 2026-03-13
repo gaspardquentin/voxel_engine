@@ -1,14 +1,11 @@
 #pragma once
 
-#include "voxel_engine/math_utils.h"
-#include <cstdint>
+#include "voxel_engine/types.h"
 #include <fstream>
 #include <iostream>
 #include <string>
 
 namespace voxeng {
-
-using UserID = uint64_t;
 
 struct UserProfile {
     UserID id;
