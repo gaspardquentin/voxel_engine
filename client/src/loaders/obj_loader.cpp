@@ -11,6 +11,12 @@
 
 namespace voxeng::client {
 
+static std::string getDirectory(const std::string& filepath) {
+    auto pos = filepath.find_last_of("/\\");
+    if (pos == std::string::npos) return ".";
+    return filepath.substr(0, pos);
+}
+
 static void parseVec3(std::istringstream& stream, std::vector<Vec3>& vec) {
     std::string token;
     std::vector<float> values;
@@ -19,7 +25,7 @@ static void parseVec3(std::istringstream& stream, std::vector<Vec3>& vec) {
     }
 
     if (values.size() < 2) {
-        std::cerr << "<voxeng> error: incorrect obj file line (not enough values)\n"; 
+        std::cerr << "<voxeng> error: incorrect obj file line (not enough values)\n";
         return;
     }
 
@@ -31,7 +37,7 @@ static void parseVec3(std::istringstream& stream, std::vector<Vec3>& vec) {
     }
 }
 
-static bool processFace(std::istringstream& line_stream, 
+static bool processFace(std::istringstream& line_stream,
                         const std::vector<Vec3>& positions,
                         const std::vector<Vec3>& normals,
                         const std::vector<Vec3>& uvs,
@@ -116,9 +122,45 @@ static bool processFace(std::istringstream& line_stream,
     return true;
 }
 
+static MaterialData parseMtlFile(const std::string& mtl_path) {
+    MaterialData material;
 
-std::optional<MeshData> ObjLoader::load(std::string file_path) {
-	MeshData mesh;
+    std::ifstream file(mtl_path);
+    if (!file.is_open()) {
+        std::cerr << "<voxeng> warning: MTL file " << mtl_path << " not found.\n";
+        return material;
+    }
+
+    std::string mtl_dir = getDirectory(mtl_path);
+    std::string line;
+
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue;
+
+        std::istringstream stream(line);
+        std::string token;
+        stream >> token;
+
+        if (token == "Kd") {
+            float r, g, b;
+            if (stream >> r >> g >> b) {
+                material.diffuse_color = {r, g, b};
+            }
+        } else if (token == "map_Kd") {
+            std::string tex_path;
+            if (stream >> tex_path) {
+                material.diffuse_texture_path = mtl_dir + "/" + tex_path;
+            }
+        }
+        // Skip newmtl, Ka, Ks, Ns, d, illum ... (unsupported yet TODO: maybe add support)
+    }
+
+    return material;
+}
+
+
+std::optional<ModelData> ObjLoader::load(std::string file_path) {
+	ModelData model;
 
     std::ifstream file;
     file.open(file_path);
@@ -127,6 +169,8 @@ std::optional<MeshData> ObjLoader::load(std::string file_path) {
         std::cerr << "<voxeng> error : obj file " << file_path << " not found.\n";
         return std::nullopt;
     }
+
+    std::string obj_dir = getDirectory(file_path);
 
     std::vector<Vec3> positions;
     std::vector<Vec3> normals;
@@ -152,19 +196,26 @@ std::optional<MeshData> ObjLoader::load(std::string file_path) {
         } else if (token == "vn") {
             parseVec3(line_stream, normals);
         } else if (token == "f") {
-            if (!processFace(line_stream, positions, normals, uvs, unique_vertices, mesh)) {
+            if (!processFace(line_stream, positions, normals, uvs, unique_vertices, model.mesh)) {
                 ok = false;
             }
+        } else if (token == "mtllib") {
+            std::string mtl_filename;
+            if (line_stream >> mtl_filename) {
+                std::string mtl_path = obj_dir + "/" + mtl_filename;
+                model.material = parseMtlFile(mtl_path);
+            }
+        } else if (token == "usemtl" || token == "o" || token == "g" || token == "s") { //TODO: maybe implement those
+            std::cerr << "Unsupported/Unrecognized obj token " << token << "\n";
         } else {
             std::cerr << "Unsupported/Unrecognized obj token " << token << "\n";
-            ok = false;
         }
 
         if (!ok) break;
     }
 
     file.close();
-    return ok ? std::make_optional(mesh) : std::nullopt;
+    return ok ? std::make_optional(model) : std::nullopt;
 }
 
-} // namespace voxeng::client
+}

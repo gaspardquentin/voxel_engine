@@ -1,6 +1,7 @@
 #pragma once
 
 #include "voxel_engine/server/world.h"
+#include "voxel_engine/types.h"
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -15,7 +16,9 @@ namespace voxeng::server {
 
 struct CommandContext {
     World& world;
+    UserID uuid;
     std::function<void(const std::string& message)> error;
+    std::function<void(const std::string& message)> log;
 };
 
 using CommandHandler = std::function<void(const std::vector<std::string>& args, CommandContext& ctx)>;

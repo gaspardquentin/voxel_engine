@@ -191,8 +191,14 @@ void Server::handleRequest(const network::SendChatRequest& req) {
     if (req.content[0] == '/') {
         CommandContext ctx {
             *m_impl->m_world,
+            req.user.id,
             [this](const std::string& message) {
                 m_impl->m_connection.pushEvent(network::ServerErrorEvent{"CommandError", message});
+            },
+            [this, req](const std::string& message) {
+                m_impl->m_connection.pushEvent(network::ChatMessageEvent{
+                    {{0, req.content}, message, std::chrono::system_clock::now()}
+                });
             }
         };
         bool ok = m_impl->m_command_registry.tryExecute(req.content, ctx);

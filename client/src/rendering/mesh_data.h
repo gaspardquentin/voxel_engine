@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <stdint.h>
 
@@ -15,12 +16,22 @@ struct Vertex {
 struct MeshData {
   std::vector<Vertex> vertices;   // positions, normals, texcoords, etc.
   std::vector<uint32_t> indices;
-  inline void clear() { 
+  inline void clear() {
     vertices.clear();
     indices.clear();
   }
 };
 
-} // namespace voxeng::client
+struct MaterialData {
+  std::string diffuse_texture_path;
+  Vec3 diffuse_color = {1.f, 1.f, 1.f};
+};
+
+struct ModelData {
+  MeshData mesh;
+  MaterialData material;
+};
+
+}
 
 

@@ -6,7 +6,7 @@
 namespace voxeng::client {
 
 struct ObjLoader {
-	static std::optional<MeshData> load(std::string file_path);
+	static std::optional<ModelData> load(std::string file_path);
 };
 
-} // namespace voxeng::client
+}

@@ -1,5 +1,10 @@
+#pragma once
+
+#include <GL/glew.h>
+
 #include "client_world.h"
 #include "rendering/interface/irender_pass.h"
+#include "rendering/opengl_texture.h"
 #include "rendering/shader.h"
 #include "voxel_engine/client/mesh.h"
 #include "voxel_engine/client/resource_manager.h"
@@ -8,14 +13,18 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
-#include <vector>
 
 namespace voxeng::client {
+
+struct EntityResource {
+  std::shared_ptr<Mesh> mesh;
+  std::unique_ptr<OpenGLTexture> texture;
+};
 
 class GLEntityRenderPass: public IRenderPass {
   const Shader& m_shader_prog;
   const std::optional<ClientWorld>& m_world;
-  std::unordered_map<EntityID, std::shared_ptr<Mesh>> m_entities_meshes;
+  std::unordered_map<EntityID, EntityResource> m_entities;
   ResourceManager m_resource_manager;
 
 public:

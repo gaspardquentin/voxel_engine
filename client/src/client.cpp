@@ -54,7 +54,7 @@ public:
 
         m_shader_manager.load("world", config.world_vertex_shader, config.world_fragment_shader);
         m_shader_manager.load("ui", config.ui_vertex_shader, config.ui_fragment_shader);
-        m_shader_manager.load("entity", VOXEL_ENGINE_SHADER_DIR "/simple_mvp.vert", VOXEL_ENGINE_SHADER_DIR "/simple.frag");
+        m_shader_manager.load("entity", VOXEL_ENGINE_SHADER_DIR "/entity.vert", VOXEL_ENGINE_SHADER_DIR "/entity.frag");
 
         m_render_pipeline.addPass<GLWorldRenderPass>(
             *(m_shader_manager.get("world")),
