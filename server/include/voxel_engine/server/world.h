@@ -8,6 +8,8 @@
 #include "entt/entity/fwd.hpp"
 #include "entt/entity/registry.hpp"
 #include "voxel_engine/callbacks.h"
+#include "voxel_engine/types.h"
+#include "voxel_engine/user.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
@@ -56,7 +58,10 @@ public:
     const entt::registry& getRegistry() const;
     entt::entity spawnEntity(std::string model_name, WorldCoord spawn_pos);
 
-    void updateChunks(WorldCoord pos);
+    void playerJoin(UserProfile player, WorldCoord spawn_pos, uint8_t render_distance);
+    const std::unordered_map<UserID, entt::entity>& getPlayerEntities() const;
+
+    void updateChunks();
 
 private:
     class Impl;

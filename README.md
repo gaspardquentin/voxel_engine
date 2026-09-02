@@ -30,7 +30,7 @@ Make sure you have the following installed on your system:
 - GLM for math operations
 - zlib for world save compression
 
-Dear ImGui (for the GUI layer) and stb_image (for texture loading) are fetched automatically by CMake.
+Dear ImGui (for the GUI layer), stb_image (for texture loading) and EnTT (for the entity component system) are fetched automatically by CMake.
 
 Textures from the [Kenny Voxel Pack](https://kenney.nl/assets/voxel-pack) are included in the repository.
 
@@ -52,6 +52,7 @@ It is made in C++17 with CMake as the build system.
 ### What will/may be implemented next (ordered by priority - descending)
 
 - Basic perlin noise terrain generation
+- Async Mesh building (separate the mesh building from the main CPU thread)
 - Collision and physics system
 - Sound system
 - Callback system for easier customization of the engine's behavior

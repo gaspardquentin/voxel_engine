@@ -27,16 +27,15 @@ public:
     std::vector<VoxelType> m_voxel_types;
     std::unordered_map<ChunkID, Chunk> m_chunks;
     std::vector<ChunkID> m_to_generate;
-    uint8_t m_render_distance; //TODO: remove this from server world
+    std::unordered_map<UserID, entt::entity> m_player_entities;
     uint64_t m_seed;
     SaveManager* m_save_manager = nullptr;
     entt::registry m_registry;
 
 
-    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint8_t render_distance, uint64_t seed, bool generate_chunks):
+    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks):
         m_connection(connection),
         m_voxel_types(voxel_types),
-        m_render_distance(render_distance),
         m_seed(seed) {
         if (generate_chunks) {
             generateChunksInit();
@@ -46,8 +45,8 @@ public:
     ~Impl() {}
 
     void generateChunksInit() {
-        _preGenerateChunks(m_render_distance, {0, 0});
-        generateSomeChunks(m_render_distance);
+        _preGenerateChunks(DEFAULT_RENDER_DISTANCE, {0, 0});
+        generateSomeChunks(DEFAULT_RENDER_DISTANCE);
     }
 
     void _preGenerateChunks(int render_distance, ChunkID start_chunk) {
@@ -94,8 +93,8 @@ public:
         }
     }
 
-    void _unloadDistantChunks(ChunkID player_chunk) {
-        int unload_distance = m_render_distance + 2;
+    void _unloadDistantChunks(int render_distance, ChunkID player_chunk) {
+        int unload_distance = render_distance + 2;
         for (auto it = m_chunks.begin(); it != m_chunks.end(); ) {
             if (ChunkID::chebyshev(player_chunk, it->first) > unload_distance) {
                 // Save dirty chunk before unloading
@@ -115,7 +114,7 @@ public:
 
 };
 
-World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, DEFAULT_RENDER_DISTANCE, seed, generate_chunks)) {}
+World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, seed, generate_chunks)) {}
 
 World::~World() = default;
 World::World(World&&) noexcept = default;
@@ -230,10 +229,29 @@ entt::entity World::spawnEntity(std::string model_name, WorldCoord spawn_pos) {
     return ent;
 }
 
-void World::updateChunks(WorldCoord pos) {
-    ChunkID player_chunk = voxeng::getChunkId(pos);
-    m_impl->_preGenerateChunks(m_impl->m_render_distance, player_chunk);
-    m_impl->_unloadDistantChunks(player_chunk);
+void World::playerJoin(UserProfile player, WorldCoord spawn_pos, uint8_t render_distance) {
+    auto ent = m_impl->m_registry.create();
+
+    m_impl->m_registry.emplace<PlayerData>(ent, PlayerData{player, render_distance});
+    m_impl->m_registry.emplace<Position>(ent, spawn_pos);
+    m_impl->m_registry.emplace<ChunkTracking>(ent);
+
+    m_impl->m_player_entities[player.id] = ent;
+}
+
+
+const std::unordered_map<UserID, entt::entity>& World::getPlayerEntities() const {
+    return m_impl->m_player_entities;
+}
+
+void World::updateChunks() {
+    for (auto [_, player, pos, tracking]: m_impl->m_registry.view<PlayerData, Position, ChunkTracking>().each()) {
+        ChunkID current_chunk = voxeng::getChunkId(pos.pos);
+        if (current_chunk == tracking.last_chunk) continue;
+        tracking.last_chunk = current_chunk;
+        m_impl->_preGenerateChunks(player.render_distance, current_chunk);
+        m_impl->_unloadDistantChunks(player.render_distance, current_chunk);
+    }
 }
 
 }

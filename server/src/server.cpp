@@ -13,6 +13,7 @@
 #include "voxel_engine/user.h"
 #include "voxel_engine/voxel_types.h"
 #include "voxel_engine/world_coords.h"
+#include "voxel_engine/server/entity_components.h"
 #include "voxel_engine/server/entity_systems.h"
 #include <algorithm>
 #include <chrono>
@@ -80,13 +81,14 @@ void Server::update(float delta_time) {
     }
 
     if (m_impl->m_world) {
+        m_impl->m_world->updateChunks();
         m_impl->m_world->update();
 
         auto& reg = m_impl->m_world->getRegistry();
         movement_system::update(reg, delta_time);
         //TODO: TODO: maybe separate into a sync method or something
-        auto view = m_impl->m_world->getRegistry().view<Position>();
-        for (auto [ent, pos]: view->each()) {
+        auto view = m_impl->m_world->getRegistry().view<Position>(entt::exclude<PlayerData>);
+        for (auto [ent, pos]: view.each()) {
             m_impl->m_connection.pushEvent(network::EntityUpdateEvent{
                 static_cast<EntityID>(ent),
                 pos.pos
@@ -101,8 +103,18 @@ void Server::handleRequest(const network::PlayerVoxelRequest& req) {
 }
 
 void Server::handleRequest(const network::PlayerPositionRequest& req) {
-    if (!isWorldLoaded()) return;
-    m_impl->m_world->updateChunks(req.position);
+    if (!isWorldLoaded()) {
+        return;
+    }
+
+    auto it = m_impl->m_world->getPlayerEntities().find(req.user);
+    if (it == m_impl->m_world->getPlayerEntities().end()) {
+        // Should never happen
+        m_impl->m_connection.pushEvent(network::ServerErrorEvent{"PositionRequest", "tried to change position on a world you have not joined."});
+        return;
+    }
+
+    m_impl->m_world->getRegistry().get<Position>(it->second).pos = req.position;
 }
 
 void Server::handleRequest(const network::CreateWorldRequest& req) {
@@ -154,7 +166,6 @@ void Server::handleRequest(const network::JoinWorldRequest& req) {
         return;
     }
 
-    // Register connected user
     m_impl->m_connected_users[req.user.id] = req.user;
 
     network::WorldLoadEvent world_evt{
@@ -168,7 +179,7 @@ void Server::handleRequest(const network::JoinWorldRequest& req) {
         m_impl->m_connection.pushEvent(network::ChatHistoryEvent{std::move(messages)});
     }
 
-    m_impl->m_world->updateChunks(world_evt.spawn_pos);
+    m_impl->m_world->playerJoin(req.user, world_evt.spawn_pos, req.render_distance);
 
 }
 
