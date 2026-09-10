@@ -8,6 +8,7 @@
 #include "voxel_engine/server/commands.h"
 #include "voxel_engine/server/network/local_server_connection.h"
 #include "voxel_engine/server/save_manager.h"
+#include "voxel_engine/server/chunk_generators.h"
 #include "voxel_engine/server/world.h"
 #include "voxel_engine/types.h"
 #include "voxel_engine/user.h"
@@ -147,6 +148,7 @@ void Server::handleRequest(const network::LoadWorldRequest& req) {
         m_impl->m_connection,
         metadata.voxel_types,
         metadata.world_seed,
+        std::make_unique<PerlinGenerator>(metadata.world_seed),
         false
     );
     //m_impl->m_world.updateChunks({0.0f, 0.0f, 0.0f});

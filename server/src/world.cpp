@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 #include <entt/entt.hpp>
 
@@ -30,13 +31,16 @@ public:
     std::unordered_map<UserID, entt::entity> m_player_entities;
     uint64_t m_seed;
     SaveManager* m_save_manager = nullptr;
+    std::unique_ptr<IChunkGenerator> m_chunk_generator;
     entt::registry m_registry;
 
 
-    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks):
+    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks, std::unique_ptr<IChunkGenerator> chunk_generator):
         m_connection(connection),
         m_voxel_types(voxel_types),
-        m_seed(seed) {
+        m_seed(seed),
+        m_chunk_generator(std::move(chunk_generator))
+        {
         if (generate_chunks) {
             generateChunksInit();
         }
@@ -88,7 +92,8 @@ public:
 
             // Generate new chunk
             auto chunk_pos = voxeng::getChunkWorldPos(chunk_id);
-            auto [it, _] = m_chunks.insert({chunk_id, {m_voxel_types, chunk_pos}});
+            auto raw_data = m_chunk_generator->generate(chunk_id);
+            auto [it, _] = m_chunks.insert({chunk_id, {m_voxel_types, chunk_pos, std::move(raw_data)}});
             m_connection.pushEvent(network::ChunkDataEvent{chunk_id, it->second.getRawData()});
         }
     }
@@ -114,7 +119,7 @@ public:
 
 };
 
-World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, seed, generate_chunks)) {}
+World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, seed, generate_chunks, std::move(generator))) {}
 
 World::~World() = default;
 World::World(World&&) noexcept = default;
@@ -123,6 +128,7 @@ World& World::operator=(World&&) noexcept = default;
 void World::setSaveManager(SaveManager* save_manager) {
     m_impl->m_save_manager = save_manager;
 }
+
 
 void World::flushAllDirtyChunks() {
     if (!m_impl->m_save_manager || !m_impl->m_save_manager->isWorldOpen()) return;

@@ -27,6 +27,10 @@ struct Velocity {
     Vec3f vel;
 };
 
+struct Collider {
+    Vec3f size;
+};
+
 struct Model {
     std::string model_name;
 };

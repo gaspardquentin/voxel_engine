@@ -55,7 +55,7 @@ VoxelID Chunk::setVoxel(ChunkCoord pos, VoxelID new_voxel) {
         std::cerr << "<voxeng> WARNING: Voxel at " << pos << " of invalid Voxel Type " << new_voxel << ".\n";
         return 0;
     }
-    size_t index = (pos.y * Chunk::DEPTH + pos.z) * Chunk::WIDTH + pos.x;
+    size_t index = Chunk::linearIndex(pos);
     VoxelID old = m_data[index];
     m_data[index] = new_voxel;
     m_render_dirty = true;
@@ -94,7 +94,6 @@ Chunk::Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position):
     for (unsigned int x = 0; x < CHUNK_WIDTH; x++) {
         for (unsigned int z = 0; z < CHUNK_DEPTH; z++) {
             unsigned int ground_height = CHUNK_HEIGHT / 2;
-            
             for (unsigned int y = 0; y < CHUNK_HEIGHT; y++) {
                 if (y < ground_height - 2) {
                     setVoxel({x,y,z}, 3); // Stone

@@ -11,23 +11,22 @@ in vec3 TexCoord;
 uniform sampler2DArray uTextures; 
 
 out vec4 fragColor;
+
 void main()
 {
-	//vec3 absNormal = abs(Normal);
-	//float edgeDist = max(absNormal.x, max(absNormal.y, absNormal.z));
-
-	// Smoothstep for anti-aliased outline
-	//float outlineFactor = smoothstep(1.0 - outlineThickness, 1.0, edgeDist);
-
-	// Blend between fill and outline
-	//vec3 finalColor = mix(objectColor, outlineColor, outlineFactor);
-
-	//fragColor = vec4(finalColor, 1.0);
-
 	vec4 texColor = texture(uTextures, TexCoord);
 
-	if (texColor.a < 0.1)   // optional: discard transparent texels
+	if (texColor.a < 0.1)
 		discard;
 
-	fragColor = texColor;//vec4(objectColor, 1.0);
+	// Directional sunlight
+	vec3 lightDir = normalize(vec3(0.4, 1.0, 0.3));  // sun direction (top-right-ish)
+	vec3 norm = normalize(Normal);
+	float diffuse = max(dot(norm, lightDir), 0.0);
+
+	// Ambient + diffuse
+	float ambient = 0.35;
+	float lighting = ambient + (1.0 - ambient) * diffuse;
+
+	fragColor = vec4(texColor.rgb * lighting, texColor.a);
 }

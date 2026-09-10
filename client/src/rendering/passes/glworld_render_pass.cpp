@@ -15,6 +15,11 @@ GLWorldRenderPass::GLWorldRenderPass(const Shader& shader,
     : m_shader_prog(shader), m_world(world) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    
+    // Enable blending for transparent blocks (like water)
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
     glClearColor(77.0f/255.0f, 109.0f/255.0f, 157.0f/255.0f, 1.0f);
 }
 

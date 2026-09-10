@@ -109,7 +109,13 @@ MeshData WorldMeshBuilder::buildMesh(const Chunk& chunk) const {
                         neighbor = chunk.getVoxel(neighborCoord);
                     }
 
-                    if (neighbor.isTransparent()) {
+                    // Don't emit face between two identical transparent blocks (like water next to water)
+                    bool shouldEmit = neighbor.isTransparent();
+                    if (voxel.isTransparent() && voxel.getId() == neighbor.getId()) {
+                        shouldEmit = false;
+                    }
+
+                    if (shouldEmit) {
                         emitFace(mesh_data, chunk, {x, y, z}, face, voxel);
                     }
                 }

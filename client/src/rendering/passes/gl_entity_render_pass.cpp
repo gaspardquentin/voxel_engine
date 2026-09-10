@@ -48,6 +48,8 @@ void GLEntityRenderPass::render(const Camera& camera) {
             resource.texture->bind();
         } else {
             m_shader_prog.setUniform1i("uHasTexture", 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         resource.mesh->draw();

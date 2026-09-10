@@ -35,8 +35,8 @@ template <typename T>
 struct Vec2T {
     T x, y;
 
-    Vec2T(): x(0), y(0) {}
-    Vec2T(T x, T y): x(x), y(y) {}
+    constexpr Vec2T(): x(0), y(0) {}
+    constexpr Vec2T(T x, T y): x(x), y(y) {}
 
     Vec2T operator+(const Vec2T& other) const { return {x + other.x, y + other.y}; }
     Vec2T operator+=(const Vec2T& other) { 
@@ -119,8 +119,8 @@ using Vec2i = Vec2T<int>;
 template <typename T>
 struct Vec3T {
     T x, y, z;
-    Vec3T(): x(0), y(0), z(0) {}
-    Vec3T(T x, T y, T z): x(x), y(y), z(z) {}
+    constexpr Vec3T(): x(0), y(0), z(0) {}
+    constexpr Vec3T(T x, T y, T z): x(x), y(y), z(z) {}
 
     template <typename U>
     explicit Vec3T(const Vec3T<U>& other)
@@ -228,7 +228,7 @@ struct Vec3T {
 using Vec3 = Vec3T<float>;
 using Vec3f = Vec3T<float>;
 using Vec3i = Vec3T<int>;
-using Vec3u = Vec3T<unsigned int>;
+using Vec3u = Vec3T<uint32_t>;
 
 // Note: Needed for obj file parsing
 // This should be interpreted as {v_idx, vt_idx, vn_idx}

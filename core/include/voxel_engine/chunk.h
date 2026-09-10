@@ -38,6 +38,10 @@ public:
     Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position);
     Chunk(const std::vector<VoxelType>& voxel_types, Vec3f position, std::array<VoxelID, CHUNK_SIZE>&& raw_data);
 
+    static constexpr size_t linearIndex(ChunkCoord pos) {
+        return (pos.y * DEPTH + pos.z) * WIDTH + pos.x;
+    }
+
 private:
     mutable bool m_render_dirty = true;
     bool m_persistence_dirty = true;

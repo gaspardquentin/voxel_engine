@@ -8,6 +8,7 @@
 #include "entt/entity/fwd.hpp"
 #include "entt/entity/registry.hpp"
 #include "voxel_engine/callbacks.h"
+#include "voxel_engine/server/chunk_generators.h"
 #include "voxel_engine/types.h"
 #include "voxel_engine/user.h"
 #include "voxel_engine/voxel_types.h"
@@ -44,7 +45,7 @@ public:
     void setSaveManager(SaveManager* save_manager);
     void flushAllDirtyChunks();
 
-    World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks = true);
+    World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, bool generate_chunks = true);
     ~World();
 
     World(World&&) noexcept;
