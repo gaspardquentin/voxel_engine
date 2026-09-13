@@ -10,6 +10,8 @@ class GLMesh : public Mesh {
   GLuint vao = 0, vbo = 0, ebo = 0;
   GLsizei index_count = 0;
 
+
+  void _upload_first_time();
 public:
   GLMesh() = default;
   GLMesh(const GLMesh&) = delete;
