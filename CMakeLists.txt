@@ -169,10 +169,15 @@ if(VOXEL_ENGINE_BUILD_TESTS)
 
     # Create test executable
     add_executable(voxel_tests
-        tests/test_world.cpp
-        #tests/test_chunks.cpp
-        #tests/test_world_lookup.cpp
-        #tests/test_math.cpp
+        # Unit tests
+        tests/unit/test_math.cpp
+        tests/unit/test_coordinates.cpp
+        tests/unit/test_chunk.cpp
+        tests/unit/test_voxel_types.cpp
+        tests/unit/test_chat_history.cpp
+        tests/unit/test_command_registry.cpp
+        tests/unit/test_generators.cpp
+        tests/unit/test_entity_systems.cpp
     )
 
     target_link_libraries(voxel_tests
@@ -183,7 +188,7 @@ if(VOXEL_ENGINE_BUILD_TESTS)
 
     # Use GoogleTest's test discovery
     include(GoogleTest)
-    gtest_discover_tests(voxel_tests)  # Fixed: was "hello_test", should be "voxel_tests"
+    gtest_discover_tests(voxel_tests)
 
     # Also add as a CTest test
     add_test(NAME VoxelEngineTests COMMAND voxel_tests)
