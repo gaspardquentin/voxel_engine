@@ -7,16 +7,18 @@
 
 namespace voxeng::server {
 
+using RawChunk = std::array<VoxelID, CHUNK_SIZE>;
+
 class IChunkGenerator {
 public:
     virtual ~IChunkGenerator() = default;
-    virtual std::array<VoxelID, CHUNK_SIZE> generate(ChunkID id) const = 0;
+    virtual RawChunk generate(ChunkID id) const = 0;
 };
 
 class PerlinGenerator : public IChunkGenerator {
 public:
     PerlinGenerator(uint64_t seed);
-    std::array<VoxelID, CHUNK_SIZE> generate(ChunkID id) const;
+    RawChunk generate(ChunkID id) const;
 private:
     uint64_t m_seed;
     void generateHeightmap(ChunkID id, std::array<unsigned int, CHUNK_WIDTH * CHUNK_DEPTH>& heightmap, unsigned int& min_height) const;
@@ -24,7 +26,7 @@ private:
 
 class FlatGenerator: public IChunkGenerator {
 public:
-    std::array<VoxelID, CHUNK_SIZE> generate(ChunkID id) const;
+    RawChunk generate(ChunkID id) const;
 };
 
 }

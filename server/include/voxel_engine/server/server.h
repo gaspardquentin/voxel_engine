@@ -2,11 +2,13 @@
 
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/network/i_server_connection.h"
+#include "voxel_engine/thread_pool.h"
 #include "voxel_engine/network/server_request.h"
 #include "voxel_engine/user.h"
 #include "voxel_engine/voxel_types.h"
 #include <cstdint>
 #include <memory>
+#include <thread>
 
 namespace voxeng::server {
 
@@ -19,6 +21,7 @@ struct WorldConfig {
 class Server {
     class Impl;
     std::unique_ptr<Impl> m_impl;
+    ThreadPool m_thread_pool;
 
 public:
     Server(network::IServerConnection& connection);

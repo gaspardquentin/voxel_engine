@@ -1,10 +1,12 @@
 #include "voxel_engine/server/world.h"
 #include "entt/entity/fwd.hpp"
 #include "voxel_engine/callbacks.h"
+#include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_server_connection.h"
 #include "voxel_engine/save_format.h"
+#include "voxel_engine/server/chunk_generators.h"
 #include "voxel_engine/server/entity_components.h"
 #include "voxel_engine/server/save_manager.h"
 #include "voxel_engine/types.h"
@@ -15,6 +17,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <entt/entt.hpp>
 
@@ -33,13 +36,17 @@ public:
     SaveManager* m_save_manager = nullptr;
     std::unique_ptr<IChunkGenerator> m_chunk_generator;
     entt::registry m_registry;
+    ThreadPool& m_thread_pool;
+    std::vector<std::pair<ChunkID, RawChunk>> m_generated_chunks;
+    std::mutex m_gen_chunks_mutex;
 
 
-    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks, std::unique_ptr<IChunkGenerator> chunk_generator):
+    Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks, std::unique_ptr<IChunkGenerator> chunk_generator, ThreadPool& thread_pool):
         m_connection(connection),
         m_voxel_types(voxel_types),
         m_seed(seed),
-        m_chunk_generator(std::move(chunk_generator))
+        m_chunk_generator(std::move(chunk_generator)),
+        m_thread_pool(thread_pool)
         {
         if (generate_chunks) {
             generateChunksInit();
@@ -119,7 +126,7 @@ public:
 
 };
 
-World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, seed, generate_chunks, std::move(generator))) {}
+World::World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, ThreadPool& thread_pool, bool generate_chunks): m_impl(std::make_unique<Impl>(connection, voxel_types, seed, generate_chunks, std::move(generator), thread_pool)) {}
 
 World::~World() = default;
 World::World(World&&) noexcept = default;
@@ -200,8 +207,38 @@ const Chunk *World::tryGetChunk(ChunkID cid) const {
 }
 
 void World::update() {
-    int chunk_amount_to_gen = 2;
-    m_impl->generateSomeChunks(chunk_amount_to_gen);
+
+    // submit generation tasks to thread pool
+    for (auto& id: m_impl->m_to_generate) {
+        // Try to load from disk first (on main thread, SaveManager isn't thread-safe)
+        // TODO: maybe make SaveManager thread-safe
+        if (m_impl->m_save_manager && m_impl->m_save_manager->chunkExistsOnDisk(id)) {
+            ChunkSaveData data;
+            if (m_impl->m_save_manager->loadChunk(id, data)) {
+                auto [it, _] = m_impl->m_chunks.insert({id, {m_impl->m_voxel_types, data.chunk_pos, std::move(data.voxels)}});
+                m_impl->m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
+                continue;
+            }
+        }
+
+        // Not on disk, generate on worker thread
+        m_impl->m_thread_pool.submit([this, id](){
+            RawChunk rc = m_impl->m_chunk_generator->generate(id);
+            std::lock_guard<std::mutex> lock(m_impl->m_gen_chunks_mutex);
+            m_impl->m_generated_chunks.push_back({id, std::move(rc)});
+        });
+    }
+    m_impl->m_to_generate.clear();
+
+    {
+        std::lock_guard<std::mutex> lock(m_impl->m_gen_chunks_mutex);
+        for (auto &[id, data]: m_impl->m_generated_chunks) {
+            auto chunk_pos = getChunkWorldPos(id);
+            auto [it, _] = m_impl->m_chunks.insert({id, {m_impl->m_voxel_types, chunk_pos, std::move(data)}});
+            m_impl->m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
+        }
+        m_impl->m_generated_chunks.clear();
+    }
 }
 
 
