@@ -13,6 +13,10 @@ void voxeng::client::GUILayer::drawDebugUI(Client& client, float fps) {
         ImGui::Text("FPS: %d", (int) fps);
         ImGui::Text("Position: (%.2f, %.2f, %.2f)", player_pos.x, player_pos.y, player_pos.z);
 
+        RenderStats stats = client.getRenderStats();
+        ImGui::Text("Chunks drawn/loaded: %zu/%zu", stats.chunks_drawn, stats.chunks_loaded);
+        ImGui::Text("Meshed this frame: %zu (queued: %zu)", stats.chunks_meshed, stats.mesh_queue_size);
+
         ImGui::Separator();
         ImGui::Text("GUI Scale");
         if (m_gui_scale == 0.0f)

@@ -19,11 +19,23 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include <entt/entt.hpp>
 
 using namespace voxeng;
 
 namespace voxeng::server {
+
+// Max chunks loaded from disk per tick (zlib decompression runs on the server thread)
+static constexpr size_t MAX_DISK_LOADS_PER_TICK = 8;
+// Chunks farther than render distance + this margin get unloaded
+static constexpr int UNLOAD_MARGIN = 2;
+
+// Shared with worker tasks so they can outlive the World that submitted them
+struct GenOutbox {
+    std::mutex mutex;
+    std::vector<std::pair<ChunkID, RawChunk>> chunks;
+};
 
 class World::Impl {
 public:
@@ -34,11 +46,12 @@ public:
     std::unordered_map<UserID, entt::entity> m_player_entities;
     uint64_t m_seed;
     SaveManager* m_save_manager = nullptr;
-    std::unique_ptr<IChunkGenerator> m_chunk_generator;
+    std::shared_ptr<const IChunkGenerator> m_chunk_generator;
     entt::registry m_registry;
     ThreadPool& m_thread_pool;
-    std::vector<std::pair<ChunkID, RawChunk>> m_generated_chunks;
-    std::mutex m_gen_chunks_mutex;
+    std::shared_ptr<GenOutbox> m_gen_outbox = std::make_shared<GenOutbox>();
+    // chunks submitted to the thread pool but not yet collected
+    std::unordered_set<ChunkID> m_pending;
 
 
     Impl(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, bool generate_chunks, std::unique_ptr<IChunkGenerator> chunk_generator, ThreadPool& thread_pool):
@@ -65,7 +78,7 @@ public:
         for (int y = -render_distance; y <= render_distance; y++) {
             for (int x = -render_distance; x <= render_distance; x++) {
                 ChunkID cid = {start_chunk.x + x, start_chunk.y + y};
-                if (m_chunks.find(cid) == m_chunks.end()) {
+                if (m_chunks.find(cid) == m_chunks.end() && m_pending.find(cid) == m_pending.end()) {
                     m_to_generate.push_back(cid);
                 }
             }
@@ -105,8 +118,18 @@ public:
         }
     }
 
+    // Whether a chunk is still within unload distance of at least one player
+    bool isChunkWanted(ChunkID id) {
+        for (auto [_, player, tracking]: m_registry.view<PlayerData, ChunkTracking>().each()) {
+            if (ChunkID::chebyshev(tracking.last_chunk, id) <= player.render_distance + UNLOAD_MARGIN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void _unloadDistantChunks(int render_distance, ChunkID player_chunk) {
-        int unload_distance = render_distance + 2;
+        int unload_distance = render_distance + UNLOAD_MARGIN;
         for (auto it = m_chunks.begin(); it != m_chunks.end(); ) {
             if (ChunkID::chebyshev(player_chunk, it->first) > unload_distance) {
                 // Save dirty chunk before unloading
@@ -207,37 +230,55 @@ const Chunk *World::tryGetChunk(ChunkID cid) const {
 }
 
 void World::update() {
+    auto& impl = *m_impl;
 
-    // submit generation tasks to thread pool
-    for (auto& id: m_impl->m_to_generate) {
+    // submit generation tasks to thread pool, nearest first (m_to_generate is sorted farthest first)
+    size_t disk_loads = 0;
+    while (!impl.m_to_generate.empty()) {
+        ChunkID id = impl.m_to_generate.back();
+
         // Try to load from disk first (on main thread, SaveManager isn't thread-safe)
         // TODO: maybe make SaveManager thread-safe
-        if (m_impl->m_save_manager && m_impl->m_save_manager->chunkExistsOnDisk(id)) {
+        if (impl.m_save_manager && impl.m_save_manager->chunkExistsOnDisk(id)) {
+            if (disk_loads >= MAX_DISK_LOADS_PER_TICK) {
+                break; // keep the remainder for the next tick
+            }
+            disk_loads++;
             ChunkSaveData data;
-            if (m_impl->m_save_manager->loadChunk(id, data)) {
-                auto [it, _] = m_impl->m_chunks.insert({id, {m_impl->m_voxel_types, data.chunk_pos, std::move(data.voxels)}});
-                m_impl->m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
+            if (impl.m_save_manager->loadChunk(id, data)) {
+                impl.m_to_generate.pop_back();
+                auto [it, _] = impl.m_chunks.insert({id, {impl.m_voxel_types, data.chunk_pos, std::move(data.voxels)}});
+                impl.m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
                 continue;
             }
         }
+        impl.m_to_generate.pop_back();
 
         // Not on disk, generate on worker thread
-        m_impl->m_thread_pool.submit([this, id](){
-            RawChunk rc = m_impl->m_chunk_generator->generate(id);
-            std::lock_guard<std::mutex> lock(m_impl->m_gen_chunks_mutex);
-            m_impl->m_generated_chunks.push_back({id, std::move(rc)});
+        impl.m_pending.insert(id);
+        impl.m_thread_pool.submit([generator = impl.m_chunk_generator, outbox = impl.m_gen_outbox, id]() {
+            RawChunk rc = generator->generate(id);
+            std::lock_guard<std::mutex> lock(outbox->mutex);
+            outbox->chunks.push_back({id, std::move(rc)});
         });
     }
-    m_impl->m_to_generate.clear();
 
+    std::vector<std::pair<ChunkID, RawChunk>> generated;
     {
-        std::lock_guard<std::mutex> lock(m_impl->m_gen_chunks_mutex);
-        for (auto &[id, data]: m_impl->m_generated_chunks) {
-            auto chunk_pos = getChunkWorldPos(id);
-            auto [it, _] = m_impl->m_chunks.insert({id, {m_impl->m_voxel_types, chunk_pos, std::move(data)}});
-            m_impl->m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
+        std::lock_guard<std::mutex> lock(impl.m_gen_outbox->mutex);
+        generated.swap(impl.m_gen_outbox->chunks);
+    }
+    for (auto& [id, data]: generated) {
+        impl.m_pending.erase(id);
+        // the player may have moved away while this chunk was being generated
+        if (!impl.isChunkWanted(id)) {
+            continue;
         }
-        m_impl->m_generated_chunks.clear();
+        auto chunk_pos = getChunkWorldPos(id);
+        auto [it, inserted] = impl.m_chunks.insert({id, {impl.m_voxel_types, chunk_pos, std::move(data)}});
+        if (inserted) {
+            impl.m_connection.pushEvent(network::ChunkDataEvent{id, it->second.getRawData()});
+        }
     }
 }
 
