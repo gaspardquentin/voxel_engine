@@ -162,6 +162,13 @@ WorldCoord Client::getPlayerPos() const {
     return m_impl->m_camera->getPos();
 }
 
+RenderStats Client::getRenderStats() const {
+    auto *world_pass = m_impl->m_render_pipeline.getPass<GLWorldRenderPass>();
+    if (!world_pass) {
+        return {};
+    }
+    return world_pass->getStats();
+}
 
 void Client::setRenderDistance(uint8_t render_distance) {
     m_impl->m_render_distance = render_distance;

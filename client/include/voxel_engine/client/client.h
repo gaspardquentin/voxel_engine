@@ -38,12 +38,20 @@ struct ClientConfig {
     unsigned int width = 1280;
     unsigned int height = 720;
     TextureMode texture_mode = TextureMode::TEXTURE_ARRAY_2D;
-    uint8_t default_render_distance = 12;
+    uint8_t default_render_distance = 16;
     std::string profile_file_path = "profile.txt";
     std::string world_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/vertex.vert";
     std::string world_fragment_shader = VOXEL_ENGINE_SHADER_DIR "/fragment.frag";
     std::string ui_vertex_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.vert";
     std::string ui_fragment_shader = VOXEL_ENGINE_SHADER_DIR "/crosshair.frag";
+};
+
+// Per-frame world rendering counters, for debugging/profiling
+struct RenderStats {
+    size_t chunks_loaded = 0;
+    size_t chunks_drawn = 0;
+    size_t chunks_meshed = 0;
+    size_t mesh_queue_size = 0;
 };
 
 class Client {
@@ -62,6 +70,8 @@ public:
     uint8_t getRenderDistance() const;
 
     WorldCoord getPlayerPos() const;
+
+    RenderStats getRenderStats() const;
 
     /* Input/Action handling */
     void moveCamera(float xoffset, float yoffset, bool constrain_pitch = true);

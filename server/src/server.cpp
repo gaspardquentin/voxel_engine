@@ -50,7 +50,8 @@ public:
 };
 
 Server::Server(network::IServerConnection& connection):
-    m_impl(std::make_unique<Impl>(connection)) {}
+    m_impl(std::make_unique<Impl>(connection)),
+    m_thread_pool(std::max(2u, std::thread::hardware_concurrency() / 2)) {}
 
 Server::~Server() {
     if (isWorldLoaded()) {
@@ -149,6 +150,7 @@ void Server::handleRequest(const network::LoadWorldRequest& req) {
         metadata.voxel_types,
         metadata.world_seed,
         std::make_unique<PerlinGenerator>(metadata.world_seed),
+        m_thread_pool,
         false
     );
     //m_impl->m_world.updateChunks({0.0f, 0.0f, 0.0f});

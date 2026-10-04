@@ -170,6 +170,9 @@ if(VOXEL_ENGINE_BUILD_TESTS)
     # Create test executable
     add_executable(voxel_tests
         tests/test_world.cpp
+        tests/test_chunk_streaming.cpp
+        tests/test_mesher.cpp
+        client/src/rendering/world_mesh_builder.cpp
         #tests/test_chunks.cpp
         #tests/test_world_lookup.cpp
         #tests/test_math.cpp
@@ -180,6 +183,7 @@ if(VOXEL_ENGINE_BUILD_TESTS)
         VoxelEngine::Core
         GTest::gtest_main
     )
+    target_include_directories(voxel_tests PRIVATE ${CMAKE_SOURCE_DIR}/client/src)
 
     # Use GoogleTest's test discovery
     include(GoogleTest)

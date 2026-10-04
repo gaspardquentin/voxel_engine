@@ -1,4 +1,8 @@
+#pragma once
+
 #include "client_world.h"
+#include "voxel_engine/client/client.h"
+#include "rendering/frustum.h"
 #include "rendering/interface/irender_pass.h"
 #include "rendering/opengl/gl_mesh.h"
 #include "rendering/opengl_texture_array.h"
@@ -21,6 +25,10 @@ class GLWorldRenderPass: public IRenderPass {
   std::unordered_map<ChunkID, std::shared_ptr<GLMesh>> m_chunk_meshes;
   OpenGLTextureArray m_textures;
   std::chrono::steady_clock::time_point m_last_cleanup = std::chrono::steady_clock::now();
+  RenderStats m_stats;
+
+  // rebuilds dirty chunk meshes, nearest visible first, within MESH_BUDGET_PER_FRAME
+  void buildDirtyMeshes(const Camera& camera, const Frustum& frustum);
 
 public:
   GLWorldRenderPass(const Shader& shader, const std::optional<ClientWorld>& world);
@@ -28,6 +36,8 @@ public:
   void loadTextures(const std::vector<VoxelType>& voxel_types);
 
   void render(const Camera& camera) override;
+
+  const RenderStats& getStats() const { return m_stats; }
 };
 
 }

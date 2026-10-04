@@ -15,6 +15,7 @@
 #include "voxel_engine/chunk.h"
 #include "voxel_engine/math_utils.h"
 #include "voxel_engine/network/i_server_connection.h"
+#include "voxel_engine/thread_pool.h"
 #include "voxel_engine/save_format.h"
 
 // render distance in chunk nbrs
@@ -45,7 +46,7 @@ public:
     void setSaveManager(SaveManager* save_manager);
     void flushAllDirtyChunks();
 
-    World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, bool generate_chunks = true);
+    World(network::IServerConnection& connection, const std::vector<VoxelType>& voxel_types, uint64_t seed, std::unique_ptr<IChunkGenerator> generator, ThreadPool& thread_pool, bool generate_chunks = true);
     ~World();
 
     World(World&&) noexcept;
