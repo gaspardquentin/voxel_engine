@@ -73,6 +73,12 @@ The system is defined in core.
 
 For now the client and server communicates only inside the same process with no real network communication, but should be ready to it once the network layer is properly implemented.
 
+More details (diagrams, threading, rendering, saving...) in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+### Performance
+
+Benchmarks (before/after for optimizations) are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
