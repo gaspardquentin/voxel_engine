@@ -1,8 +1,6 @@
 # Voxel Engine
 
 This project is a voxel engine made from Scratch for fun and learning purposes mainly.
-This engine is designed as a library, in order to be integrated into any C++ game project.
-It has the goal to be very extensible/modifiable. (Yet as the current state of development it is not the case)
 
 ## Installation
 
