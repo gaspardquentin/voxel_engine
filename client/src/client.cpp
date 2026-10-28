@@ -7,10 +7,13 @@
 #include "rendering/passes/gl_entity_render_pass.h"
 #include "rendering/render_pipeline.h"
 #include "voxel_engine/chat_history.h"
+#include "voxel_engine/collision.h"
+#include "voxel_engine/math_utils.h"
 #include "voxel_engine/message.h"
 #include "voxel_engine/network/client_event.h"
 #include "voxel_engine/network/i_client_connection.h"
 #include "voxel_engine/network/server_request.h"
+#include "voxel_engine/types.h"
 #include "voxel_engine/user.h"
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -198,10 +201,27 @@ float Client::getPlayerSpeed() const {
 }
 
 void Client::movePlayer(Movement mov, float delta_time) {
-    if (!m_impl->m_camera.has_value()) {
+    if (!m_impl->m_camera.has_value() || !m_impl->m_world.has_value()) {
         return;
     }
-    m_impl->m_camera->processMovement(mov, delta_time);
+
+    const ClientWorld& world = *m_impl->m_world;
+    auto isSolid = [&world](Vec3i block) { return world.isSolidAt(block); };
+
+    Camera& camera = *m_impl->m_camera;
+    Vec3f pos = camera.getPos();
+    const Vec3f delta = camera.getMovementDelta(mov, delta_time);
+
+    // check each axis separately so the player can slide along walls instead of stopping
+    for (int axis = 0; axis < 3; ++axis) {
+        Vec3f next = pos;
+        next[axis] += delta[axis];
+        if (!collision::isColliding(next - collision::PLAYER_EYE_OFFSET, collision::PLAYER_SIZE, isSolid)) {
+            pos = next;
+        }
+    }
+
+    camera.setPos(pos);
     m_impl->m_position_dirty = true;
 }
 

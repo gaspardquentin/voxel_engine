@@ -42,6 +42,7 @@ public:
 
     VoxelID setVoxel(ChunkID chunk_id, ChunkCoord chunk_pos, VoxelID new_voxel);
     const VoxelType& getVoxel(WorldCoord pos) const;
+    bool isSolidAt(Vec3i pos) const;
     const VoxelType& getVoxelType(VoxelID vid) const;
     const std::vector<VoxelType>& getVoxelTypes() const;
 };

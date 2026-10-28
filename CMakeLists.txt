@@ -172,6 +172,7 @@ if(VOXEL_ENGINE_BUILD_TESTS)
         tests/test_world.cpp
         tests/test_chunk_streaming.cpp
         tests/test_mesher.cpp
+        tests/test_collision.cpp
         client/src/rendering/world_mesh_builder.cpp
         #tests/test_chunks.cpp
         #tests/test_world_lookup.cpp

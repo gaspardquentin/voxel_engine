@@ -68,6 +68,16 @@ const VoxelType& ClientWorld::getVoxel(WorldCoord pos) const {
     return chunk.getVoxel(chunk_pos);
 }
 
+bool ClientWorld::isSolidAt(Vec3i pos) const {
+    WorldCoord wpos(pos);
+    auto it = m_chunks.find(voxeng::getChunkId(wpos));
+    if (it == m_chunks.end()) {
+        return true;
+    }
+    const Chunk& chunk = it->second;
+    return chunk.getVoxel(chunk.getChunkPosFromWorld(wpos)).isSolid();
+}
+
 const std::vector<VoxelType>& ClientWorld::getVoxelTypes() const {
     return m_voxel_types;
 }

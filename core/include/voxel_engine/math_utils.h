@@ -130,6 +130,9 @@ struct Vec3T {
 
     Vec2T<T> xy() const { return {x, y}; }
 
+    T& operator[](int i) { return i == 0 ? x : (i == 1 ? y : z); }
+    const T& operator[](int i) const { return i == 0 ? x : (i == 1 ? y : z); }
+
     Vec3T operator+(const Vec3T& other) const { return {x + other.x, y + other.y, z + other.z}; }
     Vec3T operator+=(const Vec3T& other) { 
         x += other.x;

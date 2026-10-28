@@ -116,6 +116,9 @@ void Server::handleRequest(const network::PlayerPositionRequest& req) {
         return;
     }
 
+
+    //TODO: sanity check on the player position request for collisions
+
     m_impl->m_world->getRegistry().get<Position>(it->second).pos = req.position;
 }
 

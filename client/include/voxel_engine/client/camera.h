@@ -92,33 +92,25 @@ public:
     return m_movement_speed;
   }
 
-  void processMovement(Movement mov, float deltaTime) {
+  Vec3f getMovementDelta(Movement mov, float deltaTime) const {
     float velocity = m_movement_speed * deltaTime;
     switch (mov) {
-      case FORWARD: {
-        m_pos += m_front * velocity;
-        break;
-      }
-      case BACKWARD: {
-        m_pos -= m_front * velocity;
-        break;
-      }
-      case LEFT: {
-        m_pos -= m_right * velocity;
-        break;
-      }
-      case RIGHT: {
-        m_pos += m_right * velocity;
-        break;
-      }
-      case UP: {
-        m_pos += m_up * velocity;
-        break;
-      }
-      case DOWN: {
-        m_pos -= m_up * velocity;
-      }
+      case FORWARD:  return m_front * velocity;
+      case BACKWARD: return m_front * -velocity;
+      case LEFT:     return m_right * -velocity;
+      case RIGHT:    return m_right * velocity;
+      case UP:       return m_up * velocity;
+      case DOWN:     return m_up * -velocity;
     }
+    return Vec3f();
+  }
+
+  void processMovement(Movement mov, float deltaTime) {
+    m_pos += getMovementDelta(mov, deltaTime);
+  }
+
+  void setPos(const Vec3f& pos) {
+    m_pos = pos;
   }
 
   void processEulerMovement(float xoffset, float yoffset, bool constrain_pitch = true)
